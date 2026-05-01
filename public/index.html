@@ -2,764 +2,220 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>LENS AI — FPV Camera Advisor</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>LENS AI</title>
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Mono:wght@300;400;500&family=Barlow+Condensed:wght@300;400;600;700&display=swap');
-
   :root {
-    --black: #080808;
-    --dark: #111111;
-    --panel: #161616;
-    --border: #252525;
-    --accent: #FF4D00;
-    --accent2: #FFB800;
-    --text: #E8E8E8;
-    --muted: #666;
-    --dim: #333;
+    --black: #080808; --dark: #111; --panel: #161616; --border: #252525;
+    --accent: #FF4D00; --accent2: #FFB800; --text: #E8E8E8; --muted: #666; --green: #00CC66;
   }
-
-  * { margin: 0; padding: 0; box-sizing: border-box; }
-
-  body {
-    background: var(--black);
-    color: var(--text);
-    font-family: 'DM Mono', monospace;
-    min-height: 100vh;
-    overflow-x: hidden;
-  }
-
-  header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 16px 24px;
-    border-bottom: 1px solid var(--border);
-    position: sticky;
-    top: 0;
-    background: var(--black);
-    z-index: 100;
-  }
-
-  .logo {
-    font-family: 'Bebas Neue', sans-serif;
-    font-size: 28px;
-    letter-spacing: 6px;
-    color: var(--accent);
-  }
+  * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  body { background: var(--black); color: var(--text); font-family: 'DM Mono', monospace; min-height: 100vh; }
+  header { display: flex; align-items: center; justify-content: space-between; padding: 14px 20px; border-bottom: 1px solid var(--border); background: var(--black); position: sticky; top: 0; z-index: 100; }
+  .logo { font-family: 'Bebas Neue', sans-serif; font-size: 26px; letter-spacing: 6px; color: var(--accent); }
   .logo span { color: var(--text); }
-
-  .status-dot {
-    width: 8px; height: 8px;
-    border-radius: 50%;
-    background: var(--muted);
-    display: inline-block;
-    margin-right: 8px;
-    transition: background 0.3s;
-  }
-  .status-dot.live { background: #00FF88; box-shadow: 0 0 8px #00FF8866; animation: pulse 2s infinite; }
-  .status-dot.analyzing { background: var(--accent2); animation: pulse 0.5s infinite; }
-
-  @keyframes pulse {
-    0%, 100% { opacity: 1; }
-    50% { opacity: 0.4; }
-  }
-
-  .header-right {
-    display: flex;
-    align-items: center;
-    font-size: 11px;
-    color: var(--muted);
-    letter-spacing: 1px;
-    text-transform: uppercase;
-  }
-
-  /* API KEY SETUP */
-  .api-bar {
-    background: #0d0800;
-    border-bottom: 1px solid #2a1a00;
-    padding: 10px 24px;
-    display: flex;
-    align-items: center;
-    gap: 12px;
-  }
-  .api-bar label {
-    font-size: 10px;
-    letter-spacing: 2px;
-    text-transform: uppercase;
-    color: var(--accent2);
-    white-space: nowrap;
-  }
-  .api-bar input {
-    flex: 1;
-    background: #111;
-    border: 1px solid #2a1a00;
-    color: var(--text);
-    padding: 7px 12px;
-    font-family: 'DM Mono', monospace;
-    font-size: 12px;
-    outline: none;
-    max-width: 420px;
-  }
+  .version { font-size: 10px; color: var(--muted); letter-spacing: 2px; }
+  .api-bar { background: #0d0800; border-bottom: 1px solid #2a1a00; padding: 10px 16px; display: flex; align-items: center; gap: 10px; }
+  .api-bar label { font-size: 9px; letter-spacing: 2px; text-transform: uppercase; color: var(--accent2); white-space: nowrap; }
+  .api-bar input { flex: 1; background: #111; border: 1px solid #2a1a00; color: var(--text); padding: 8px 10px; font-family: 'DM Mono', monospace; font-size: 12px; outline: none; border-radius: 2px; min-width: 0; }
   .api-bar input:focus { border-color: var(--accent2); }
-  .api-bar .save-btn {
-    background: var(--accent2);
-    color: #000;
-    border: none;
-    padding: 7px 16px;
-    font-family: 'Barlow Condensed', sans-serif;
-    font-size: 13px;
-    font-weight: 700;
-    letter-spacing: 2px;
-    cursor: pointer;
-  }
-  .api-bar .saved-badge {
-    font-size: 10px;
-    color: #00FF88;
-    letter-spacing: 2px;
-    display: none;
-  }
-  .api-bar .saved-badge.show { display: inline; }
-
-  .main {
-    display: grid;
-    grid-template-columns: 1fr 380px;
-    gap: 0;
-    height: calc(100vh - 97px);
-  }
-
-  /* CAMERA */
-  .camera-section {
-    position: relative;
-    background: #000;
-    overflow: hidden;
-  }
-
-  #videoEl {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    display: block;
-  }
-
-  #canvasEl { display: none; }
-
-  .camera-overlay {
-    position: absolute;
-    inset: 0;
-    pointer-events: none;
-  }
-
-  .crosshair {
-    position: absolute;
-    top: 50%; left: 50%;
-    transform: translate(-50%, -50%);
-    width: 60px; height: 60px;
-  }
-  .crosshair::before, .crosshair::after {
-    content: '';
-    position: absolute;
-    background: rgba(255,77,0,0.6);
-  }
-  .crosshair::before { width: 1px; height: 100%; left: 50%; top: 0; }
-  .crosshair::after { width: 100%; height: 1px; top: 50%; left: 0; }
-
-  .corners { position: absolute; inset: 20px; }
-  .corner {
-    position: absolute;
-    width: 20px; height: 20px;
-    border-color: var(--accent);
-    border-style: solid;
-    opacity: 0.5;
-  }
-  .corner.tl { top: 0; left: 0; border-width: 2px 0 0 2px; }
-  .corner.tr { top: 0; right: 0; border-width: 2px 2px 0 0; }
-  .corner.bl { bottom: 0; left: 0; border-width: 0 0 2px 2px; }
-  .corner.br { bottom: 0; right: 0; border-width: 0 2px 2px 0; }
-
-  .scan-line {
-    position: absolute;
-    left: 0; right: 0;
-    height: 2px;
-    background: linear-gradient(90deg, transparent, var(--accent2), transparent);
-    opacity: 0;
-  }
-  .scan-line.active {
-    animation: scan 1.5s ease-in-out infinite;
-    opacity: 1;
-  }
-  @keyframes scan {
-    0% { top: 0%; }
-    100% { top: 100%; }
-  }
-
-  .camera-placeholder {
-    position: absolute;
-    inset: 0;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: 20px;
-    background: var(--dark);
-  }
-
-  .cam-icon {
-    font-size: 48px;
-    opacity: 0.2;
-  }
-
-  .start-btn {
-    background: var(--accent);
-    color: white;
-    border: none;
-    padding: 14px 40px;
-    font-family: 'Barlow Condensed', sans-serif;
-    font-size: 18px;
-    font-weight: 700;
-    letter-spacing: 4px;
-    text-transform: uppercase;
-    cursor: pointer;
-    transition: all 0.2s;
-  }
-  .start-btn:hover { background: #FF6620; transform: translateY(-1px); }
-
-  .cam-label {
-    font-size: 11px;
-    color: var(--muted);
-    letter-spacing: 2px;
-    text-transform: uppercase;
-  }
-
-  .error-msg {
-    font-size: 12px;
-    color: #FF4444;
-    text-align: center;
-    max-width: 280px;
-    line-height: 1.6;
-  }
-
-  .analyze-btn {
-    position: absolute;
-    bottom: 24px;
-    left: 50%;
-    transform: translateX(-50%);
-    background: var(--accent);
-    color: white;
-    border: none;
-    padding: 14px 40px;
-    font-family: 'Barlow Condensed', sans-serif;
-    font-size: 18px;
-    font-weight: 700;
-    letter-spacing: 4px;
-    text-transform: uppercase;
-    cursor: pointer;
-    transition: all 0.2s;
-    pointer-events: all;
-    display: none;
-    white-space: nowrap;
-  }
-  .analyze-btn:hover { background: #FF6620; }
-  .analyze-btn:disabled { background: var(--dim); cursor: not-allowed; }
-  .analyze-btn.visible { display: block; }
-
-  /* PANEL */
-  .panel {
-    background: var(--panel);
-    border-left: 1px solid var(--border);
-    display: flex;
-    flex-direction: column;
-    overflow: hidden;
-  }
-
-  .selector-section {
-    padding: 20px;
-    border-bottom: 1px solid var(--border);
-  }
-
-  .section-label {
-    font-size: 10px;
-    letter-spacing: 3px;
-    text-transform: uppercase;
-    color: var(--muted);
-    margin-bottom: 12px;
-  }
-
-  .camera-tabs {
-    display: grid;
-    grid-template-columns: 1fr 1fr 1fr;
-    gap: 6px;
-  }
-
-  .cam-tab {
-    background: var(--dark);
-    border: 1px solid var(--border);
-    color: var(--muted);
-    padding: 10px 6px;
-    font-family: 'Barlow Condensed', sans-serif;
-    font-size: 13px;
-    font-weight: 600;
-    letter-spacing: 1px;
-    text-transform: uppercase;
-    cursor: pointer;
-    transition: all 0.2s;
-    text-align: center;
-  }
-  .cam-tab:hover { border-color: var(--accent); color: var(--text); }
+  .save-btn { background: var(--accent2); color: #000; border: none; padding: 8px 14px; font-family: 'Barlow Condensed', sans-serif; font-size: 13px; font-weight: 700; letter-spacing: 2px; cursor: pointer; border-radius: 2px; white-space: nowrap; }
+  .content { padding: 16px; max-width: 500px; margin: 0 auto; }
+  .section-label { font-size: 9px; letter-spacing: 3px; text-transform: uppercase; color: var(--muted); margin-bottom: 10px; }
+  .camera-tabs { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 6px; margin-bottom: 6px; }
+  .cam-tab { background: var(--dark); border: 1px solid var(--border); color: var(--muted); padding: 12px 6px; font-family: 'Barlow Condensed', sans-serif; font-size: 14px; font-weight: 600; letter-spacing: 1px; text-transform: uppercase; cursor: pointer; text-align: center; border-radius: 2px; }
   .cam-tab.active { background: var(--accent); border-color: var(--accent); color: white; }
-
-  .log-selector { margin-top: 10px; display: flex; gap: 6px; }
-
-  .log-pill {
-    flex: 1;
-    background: var(--dark);
-    border: 1px solid var(--border);
-    color: var(--muted);
-    padding: 8px;
-    font-family: 'DM Mono', monospace;
-    font-size: 11px;
-    letter-spacing: 1px;
-    cursor: pointer;
-    transition: all 0.2s;
-    text-align: center;
-  }
-  .log-pill:hover { border-color: var(--accent2); color: var(--text); }
+  .log-row { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-bottom: 16px; }
+  .log-pill { background: var(--dark); border: 1px solid var(--border); color: var(--muted); padding: 10px; font-family: 'DM Mono', monospace; font-size: 11px; letter-spacing: 1px; cursor: pointer; text-align: center; border-radius: 2px; }
   .log-pill.active { background: #1a1400; border-color: var(--accent2); color: var(--accent2); }
-
-  .intent-section {
-    padding: 16px 20px;
-    border-bottom: 1px solid var(--border);
-  }
-
-  .intent-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
-
-  .intent-chip {
-    background: var(--dark);
-    border: 1px solid var(--border);
-    color: var(--muted);
-    padding: 8px 10px;
-    font-size: 11px;
-    letter-spacing: 1px;
-    cursor: pointer;
-    transition: all 0.2s;
-    text-align: center;
-    font-family: 'DM Mono', monospace;
-  }
-  .intent-chip:hover { border-color: #444; color: var(--text); }
-  .intent-chip.active { background: #0a1a0a; border-color: #00AA55; color: #00CC66; }
-
-  .results-section {
-    flex: 1;
-    overflow-y: auto;
-    padding: 20px;
-  }
-  .results-section::-webkit-scrollbar { width: 4px; }
-  .results-section::-webkit-scrollbar-thumb { background: var(--dim); border-radius: 2px; }
-
-  .empty-state {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    height: 100%;
-    gap: 12px;
-    color: var(--muted);
-    text-align: center;
-  }
-  .empty-icon { font-size: 40px; opacity: 0.2; }
-  .empty-text { font-size: 11px; letter-spacing: 2px; text-transform: uppercase; line-height: 1.8; }
-
-  .settings-grid { display: none; gap: 10px; flex-direction: column; }
-  .settings-grid.visible { display: flex; }
-
-  .setting-row {
-    background: var(--dark);
-    border: 1px solid var(--border);
-    padding: 14px 16px;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    animation: slideIn 0.3s ease forwards;
-    opacity: 0;
-  }
-  @keyframes slideIn {
-    from { opacity: 0; transform: translateX(10px); }
-    to { opacity: 1; transform: translateX(0); }
-  }
-
-  .setting-key { font-size: 10px; letter-spacing: 2px; text-transform: uppercase; color: var(--muted); }
-  .setting-val { font-family: 'Bebas Neue', sans-serif; font-size: 22px; letter-spacing: 2px; color: var(--accent2); }
-  .setting-val.highlight { color: var(--accent); }
-
-  .scene-analysis {
-    margin-top: 16px;
-    background: var(--dark);
-    border: 1px solid var(--border);
-    border-left: 3px solid var(--accent);
-    padding: 14px 16px;
-    display: none;
-  }
-  .scene-analysis.visible { display: block; animation: slideIn 0.4s ease forwards; }
-
-  .analysis-label { font-size: 10px; letter-spacing: 2px; text-transform: uppercase; color: var(--accent); margin-bottom: 8px; }
-  .analysis-text { font-size: 12px; line-height: 1.7; color: #aaa; }
-
-  .tips-box {
-    margin-top: 10px;
-    background: #0d0d0d;
-    border: 1px solid var(--border);
-    border-left: 3px solid #00AA55;
-    padding: 14px 16px;
-    display: none;
-  }
-  .tips-box.visible { display: block; animation: slideIn 0.5s ease forwards; }
-  .tips-label { font-size: 10px; letter-spacing: 2px; text-transform: uppercase; color: #00AA55; margin-bottom: 8px; }
-  .tips-text { font-size: 11px; line-height: 1.8; color: #888; white-space: pre-line; }
-
-  .loading-state { display: none; flex-direction: column; align-items: center; gap: 16px; padding: 40px 0; }
-  .loading-state.visible { display: flex; }
-  .loading-bar { width: 100%; height: 2px; background: var(--border); overflow: hidden; }
+  .intent-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-bottom: 16px; }
+  .intent-chip { background: var(--dark); border: 1px solid var(--border); color: var(--muted); padding: 10px; font-size: 11px; letter-spacing: 1px; cursor: pointer; text-align: center; font-family: 'DM Mono', monospace; border-radius: 2px; }
+  .intent-chip.active { background: #0a1a0a; border-color: var(--green); color: var(--green); }
+  .upload-zone { border: 2px dashed var(--border); border-radius: 4px; padding: 32px 20px; text-align: center; cursor: pointer; margin-bottom: 16px; position: relative; background: var(--dark); }
+  .upload-zone.has-image { border-color: var(--accent); padding: 0; overflow: hidden; }
+  #previewImg { width: 100%; max-height: 280px; object-fit: cover; display: none; border-radius: 2px; }
+  .upload-zone.has-image #previewImg { display: block; }
+  .upload-placeholder { display: flex; flex-direction: column; align-items: center; gap: 10px; }
+  .upload-zone.has-image .upload-placeholder { display: none; }
+  .upload-icon { font-size: 44px; opacity: 0.3; }
+  .upload-text { font-family: 'Barlow Condensed', sans-serif; font-size: 18px; font-weight: 600; letter-spacing: 3px; text-transform: uppercase; color: var(--muted); }
+  .upload-sub { font-size: 10px; color: var(--muted); letter-spacing: 1px; }
+  #fileInput { position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%; }
+  .retake-btn { display: none; width: 100%; background: #1a1a1a; border: 1px solid var(--border); color: var(--muted); padding: 10px; font-family: 'DM Mono', monospace; font-size: 11px; letter-spacing: 2px; cursor: pointer; text-align: center; margin-bottom: 16px; }
+  .retake-btn.visible { display: block; }
+  .analyze-btn { width: 100%; background: var(--accent); color: white; border: none; padding: 18px; font-family: 'Barlow Condensed', sans-serif; font-size: 20px; font-weight: 700; letter-spacing: 5px; text-transform: uppercase; cursor: pointer; border-radius: 2px; margin-bottom: 20px; }
+  .analyze-btn:active { background: #cc3d00; }
+  .analyze-btn:disabled { background: #333; color: #666; cursor: not-allowed; }
+  .loading-bar { width: 100%; height: 3px; background: var(--border); overflow: hidden; margin-bottom: 20px; display: none; border-radius: 2px; }
+  .loading-bar.visible { display: block; }
   .loading-fill { height: 100%; background: linear-gradient(90deg, var(--accent), var(--accent2)); animation: loading 1.5s ease-in-out infinite; width: 40%; }
-  @keyframes loading { 0% { transform: translateX(-100%); } 100% { transform: translateX(350%); } }
-  .loading-text { font-size: 11px; letter-spacing: 3px; text-transform: uppercase; color: var(--muted); }
-
-  @media (max-width: 768px) {
-    .main { grid-template-columns: 1fr; grid-template-rows: 45vh 1fr; height: auto; }
-    .panel { max-height: none; }
-  }
+  @keyframes loading { 0% { transform: translateX(-150%); } 100% { transform: translateX(400%); } }
+  @keyframes slideUp { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+  .results { display: none; }
+  .results.visible { display: block; }
+  .result-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-bottom: 10px; }
+  .result-card { background: var(--dark); border: 1px solid var(--border); padding: 14px 12px; border-radius: 2px; animation: slideUp 0.3s ease forwards; opacity: 0; }
+  .result-card.full { grid-column: 1 / -1; }
+  .result-key { font-size: 9px; letter-spacing: 2px; text-transform: uppercase; color: var(--muted); margin-bottom: 4px; }
+  .result-val { font-family: 'Bebas Neue', sans-serif; font-size: 24px; letter-spacing: 2px; color: var(--accent2); line-height: 1; }
+  .result-val.hot { color: var(--accent); }
+  .scene-box { background: var(--dark); border: 1px solid var(--border); border-left: 3px solid var(--accent); padding: 14px; margin-bottom: 10px; border-radius: 2px; animation: slideUp 0.4s ease forwards; opacity: 0; }
+  .scene-label { font-size: 9px; letter-spacing: 2px; text-transform: uppercase; color: var(--accent); margin-bottom: 8px; }
+  .scene-text { font-size: 12px; line-height: 1.7; color: #aaa; }
+  .tips-box { background: var(--dark); border: 1px solid var(--border); border-left: 3px solid var(--green); padding: 14px; margin-bottom: 24px; border-radius: 2px; animation: slideUp 0.5s ease forwards; opacity: 0; }
+  .tips-label { font-size: 9px; letter-spacing: 2px; text-transform: uppercase; color: var(--green); margin-bottom: 8px; }
+  .tips-text { font-size: 12px; line-height: 1.8; color: #888; white-space: pre-line; }
+  .error-box { background: #1a0a0a; border: 1px solid #440000; border-left: 3px solid #FF4444; padding: 14px; margin-bottom: 16px; border-radius: 2px; font-size: 12px; color: #FF8888; line-height: 1.6; display: none; }
+  .error-box.visible { display: block; }
 </style>
 </head>
 <body>
-
 <header>
   <div class="logo">LENS<span>AI</span></div>
-  <div class="header-right">
-    <span class="status-dot" id="statusDot"></span>
-    <span id="statusText">OFFLINE</span>
-  </div>
+  <div class="version">FPV ADVISOR</div>
 </header>
-
-<!-- API KEY BAR -->
 <div class="api-bar">
-  <label>Anthropic API Key</label>
-  <input type="password" id="apiKeyInput" placeholder="sk-ant-..." />
+  <label>API Key</label>
+  <input type="password" id="apiKeyInput" placeholder="sk-ant-..." autocomplete="off" />
   <button class="save-btn" onclick="saveKey()">SAVE</button>
-  <span class="saved-badge" id="savedBadge">✓ SAVED</span>
 </div>
-
-<div class="main">
-
-  <!-- CAMERA -->
-  <div class="camera-section">
-    <video id="videoEl" autoplay playsinline muted></video>
-    <canvas id="canvasEl"></canvas>
-
-    <div class="camera-overlay">
-      <div class="corners">
-        <div class="corner tl"></div>
-        <div class="corner tr"></div>
-        <div class="corner bl"></div>
-        <div class="corner br"></div>
-      </div>
-      <div class="crosshair"></div>
-      <div class="scan-line" id="scanLine"></div>
-    </div>
-
-    <div class="camera-placeholder" id="cameraPlaceholder">
-      <div class="cam-icon">📷</div>
-      <div class="cam-label">Point camera at your scene</div>
-      <button class="start-btn" onclick="startCamera()">ACTIVATE CAMERA</button>
-      <div class="error-msg" id="camError" style="display:none"></div>
-    </div>
-
-    <button class="analyze-btn" id="analyzeBtn" onclick="analyzeScene()">⬡ ANALYZE SCENE</button>
+<div class="content">
+  <div class="section-label">Camera System</div>
+  <div class="camera-tabs">
+    <button class="cam-tab active" onclick="selectCamera('avata2')" id="tab-avata2">Avata 2</button>
+    <button class="cam-tab" onclick="selectCamera('mini4pro')" id="tab-mini4pro">Mini 4 Pro</button>
+    <button class="cam-tab" onclick="selectCamera('gopro')" id="tab-gopro">GoPro</button>
   </div>
-
-  <!-- PANEL -->
-  <div class="panel">
-
-    <div class="selector-section">
-      <div class="section-label">Camera System</div>
-      <div class="camera-tabs">
-        <button class="cam-tab active" onclick="selectCamera('avata2')" id="tab-avata2">Avata 2</button>
-        <button class="cam-tab" onclick="selectCamera('mini4pro')" id="tab-mini4pro">Mini 4 Pro</button>
-        <button class="cam-tab" onclick="selectCamera('gopro')" id="tab-gopro">GoPro</button>
-      </div>
-      <div class="log-selector">
-        <button class="log-pill active" onclick="selectLog('log')" id="log-log">D-Log M</button>
-        <button class="log-pill" onclick="selectLog('normal')" id="log-normal">Normal</button>
-      </div>
+  <div class="log-row">
+    <button class="log-pill active" onclick="selectLog('log')" id="log-log">D-Log M</button>
+    <button class="log-pill" onclick="selectLog('normal')" id="log-normal">Normal</button>
+  </div>
+  <div class="section-label">Shoot Intent</div>
+  <div class="intent-grid">
+    <button class="intent-chip active" onclick="toggleIntent(this, 'FPV gaps fast flying')">FPV GAPS</button>
+    <button class="intent-chip" onclick="toggleIntent(this, 'cinematic slow smooth')">CINEMATIC</button>
+    <button class="intent-chip" onclick="toggleIntent(this, 'low light indoor')">LOW LIGHT</button>
+    <button class="intent-chip" onclick="toggleIntent(this, 'bright outdoor sun')">BRIGHT SUN</button>
+    <button class="intent-chip" onclick="toggleIntent(this, 'motion blur creative')">MOTION BLUR</button>
+    <button class="intent-chip" onclick="toggleIntent(this, 'fast sport action')">SPORT</button>
+  </div>
+  <div class="section-label">Scene Photo</div>
+  <div class="upload-zone" id="uploadZone">
+    <input type="file" id="fileInput" accept="image/*" capture="environment" onchange="handlePhoto(event)" />
+    <div class="upload-placeholder">
+      <div class="upload-icon">📷</div>
+      <div class="upload-text">Take Photo</div>
+      <div class="upload-sub">TAP TO OPEN CAMERA</div>
     </div>
-
-    <div class="intent-section">
-      <div class="section-label">Shoot Intent</div>
-      <div class="intent-grid">
-        <button class="intent-chip active" onclick="toggleIntent(this, 'FPV gaps fast flying')">FPV GAPS</button>
-        <button class="intent-chip" onclick="toggleIntent(this, 'cinematic slow smooth')">CINEMATIC</button>
-        <button class="intent-chip" onclick="toggleIntent(this, 'low light indoor')">LOW LIGHT</button>
-        <button class="intent-chip" onclick="toggleIntent(this, 'bright outdoor sun')">BRIGHT SUN</button>
-        <button class="intent-chip" onclick="toggleIntent(this, 'motion blur creative')">MOTION BLUR</button>
-        <button class="intent-chip" onclick="toggleIntent(this, 'fast sport action')">SPORT</button>
-      </div>
+    <img id="previewImg" alt="Scene preview" />
+  </div>
+  <button class="retake-btn" id="retakeBtn" onclick="retakePhoto()">↺ RETAKE PHOTO</button>
+  <button class="analyze-btn" id="analyzeBtn" onclick="analyzeScene()">⬡ ANALYZE SCENE</button>
+  <div class="loading-bar" id="loadingBar"><div class="loading-fill"></div></div>
+  <div class="error-box" id="errorBox"></div>
+  <div class="results" id="results">
+    <div class="result-grid">
+      <div class="result-card" style="animation-delay:0.0s"><div class="result-key">ISO</div><div class="result-val hot" id="r-iso">—</div></div>
+      <div class="result-card" style="animation-delay:0.05s"><div class="result-key">Shutter</div><div class="result-val" id="r-shutter">—</div></div>
+      <div class="result-card" style="animation-delay:0.1s"><div class="result-key">White Balance</div><div class="result-val" id="r-wb">—</div></div>
+      <div class="result-card" style="animation-delay:0.15s"><div class="result-key">ND Filter</div><div class="result-val hot" id="r-nd">—</div></div>
+      <div class="result-card" style="animation-delay:0.2s"><div class="result-key">Color Profile</div><div class="result-val" id="r-color">—</div></div>
+      <div class="result-card" style="animation-delay:0.25s"><div class="result-key">Resolution / FPS</div><div class="result-val" id="r-res">—</div></div>
+      <div class="result-card full" style="animation-delay:0.3s"><div class="result-key">EIS / Stabilizer</div><div class="result-val" id="r-eis">—</div></div>
     </div>
-
-    <div class="results-section">
-
-      <div class="loading-state" id="loadingState">
-        <div class="loading-bar"><div class="loading-fill"></div></div>
-        <div class="loading-text">Reading scene...</div>
-      </div>
-
-      <div class="empty-state" id="emptyState">
-        <div class="empty-icon">◈</div>
-        <div class="empty-text">Activate camera<br>aim at your scene<br>hit analyze</div>
-      </div>
-
-      <div class="settings-grid" id="settingsGrid">
-        <div class="setting-row" style="animation-delay:0.00s"><div class="setting-key">ISO</div><div class="setting-val highlight" id="r-iso">—</div></div>
-        <div class="setting-row" style="animation-delay:0.05s"><div class="setting-key">Shutter</div><div class="setting-val" id="r-shutter">—</div></div>
-        <div class="setting-row" style="animation-delay:0.10s"><div class="setting-key">White Balance</div><div class="setting-val" id="r-wb">—</div></div>
-        <div class="setting-row" style="animation-delay:0.15s"><div class="setting-key">ND Filter</div><div class="setting-val highlight" id="r-nd">—</div></div>
-        <div class="setting-row" style="animation-delay:0.20s"><div class="setting-key">Color Profile</div><div class="setting-val" id="r-color">—</div></div>
-        <div class="setting-row" style="animation-delay:0.25s"><div class="setting-key">Resolution / FPS</div><div class="setting-val" id="r-res">—</div></div>
-        <div class="setting-row" style="animation-delay:0.30s"><div class="setting-key">EIS / Stabilizer</div><div class="setting-val" id="r-eis">—</div></div>
-      </div>
-
-      <div class="scene-analysis" id="sceneAnalysis">
-        <div class="analysis-label">◈ Scene Read</div>
-        <div class="analysis-text" id="sceneText"></div>
-      </div>
-
-      <div class="tips-box" id="tipsBox">
-        <div class="tips-label">▸ Operator Notes</div>
-        <div class="tips-text" id="tipsText"></div>
-      </div>
-
-    </div>
+    <div class="scene-box"><div class="scene-label">◈ Scene Read</div><div class="scene-text" id="sceneText"></div></div>
+    <div class="tips-box"><div class="tips-label">▸ Operator Notes</div><div class="tips-text" id="tipsText"></div></div>
   </div>
 </div>
-
 <script>
-  let selectedCamera = 'avata2';
-  let selectedLog = 'log';
-  let activeIntents = ['FPV gaps fast flying'];
-  let cameraActive = false;
+  let selectedCamera = 'avata2', selectedLog = 'log', activeIntents = ['FPV gaps fast flying'], imageBase64 = null;
   let apiKey = localStorage.getItem('lens_api_key') || '';
-
-  // Restore saved key
-  if (apiKey) {
-    document.getElementById('apiKeyInput').value = apiKey;
-    document.getElementById('savedBadge').classList.add('show');
-  }
+  if (apiKey) document.getElementById('apiKeyInput').value = apiKey;
 
   function saveKey() {
     apiKey = document.getElementById('apiKeyInput').value.trim();
+    if (!apiKey) return;
     localStorage.setItem('lens_api_key', apiKey);
-    const badge = document.getElementById('savedBadge');
-    badge.classList.add('show');
-    setTimeout(() => badge.classList.remove('show'), 2000);
+    const btn = document.querySelector('.save-btn');
+    btn.textContent = '✓'; setTimeout(() => btn.textContent = 'SAVE', 1500);
   }
-
-  // ── CAMERA ──────────────────────────────────────────
-  async function startCamera() {
-    const errEl = document.getElementById('camError');
-    errEl.style.display = 'none';
-
-    const constraints = [
-      { video: { facingMode: { ideal: 'environment' }, width: { ideal: 1920 } }, audio: false },
-      { video: { width: { ideal: 1280 } }, audio: false },
-      { video: true, audio: false }
-    ];
-
-    for (const c of constraints) {
-      try {
-        const stream = await navigator.mediaDevices.getUserMedia(c);
-        const video = document.getElementById('videoEl');
-        video.srcObject = stream;
-        await video.play();
-        document.getElementById('cameraPlaceholder').style.display = 'none';
-        document.getElementById('analyzeBtn').classList.add('visible');
-        cameraActive = true;
-        setStatus('live', 'LIVE');
-        return;
-      } catch(e) {
-        console.warn('Camera constraint failed, trying next...', e);
-      }
-    }
-
-    errEl.textContent = 'Camera access denied or unavailable. Make sure you\'re on http://localhost and have allowed camera permissions in your browser.';
-    errEl.style.display = 'block';
-  }
-
-  function captureFrame() {
-    const video = document.getElementById('videoEl');
-    const canvas = document.getElementById('canvasEl');
-    canvas.width = video.videoWidth || 1280;
-    canvas.height = video.videoHeight || 720;
-    canvas.getContext('2d').drawImage(video, 0, 0);
-    // Downscale for API
-    const c2 = document.createElement('canvas');
-    const scale = Math.min(800 / canvas.width, 600 / canvas.height, 1);
-    c2.width = Math.round(canvas.width * scale);
-    c2.height = Math.round(canvas.height * scale);
-    c2.getContext('2d').drawImage(canvas, 0, 0, c2.width, c2.height);
-    return c2.toDataURL('image/jpeg', 0.85).split(',')[1];
-  }
-
-  // ── SELECTORS ────────────────────────────────────────
   function selectCamera(cam) {
     selectedCamera = cam;
     document.querySelectorAll('.cam-tab').forEach(t => t.classList.remove('active'));
     document.getElementById('tab-' + cam).classList.add('active');
-    const logBtn = document.getElementById('log-log');
-    if (cam === 'gopro') { logBtn.textContent = 'GP-Log'; }
-    else { logBtn.textContent = 'D-Log M'; }
+    document.getElementById('log-log').textContent = cam === 'gopro' ? 'GP-Log' : 'D-Log M';
     selectLog('log');
   }
-
   function selectLog(log) {
     selectedLog = log;
     document.querySelectorAll('.log-pill').forEach(p => p.classList.remove('active'));
     document.getElementById('log-' + log).classList.add('active');
   }
-
   function toggleIntent(el, intent) {
     if (el.classList.contains('active')) {
       if (activeIntents.length === 1) return;
       el.classList.remove('active');
       activeIntents = activeIntents.filter(i => i !== intent);
-    } else {
-      el.classList.add('active');
-      activeIntents.push(intent);
-    }
+    } else { el.classList.add('active'); activeIntents.push(intent); }
   }
-
-  function setStatus(state, text) {
-    const dot = document.getElementById('statusDot');
-    dot.className = 'status-dot ' + state;
-    document.getElementById('statusText').textContent = text;
-  }
-
-  // ── ANALYZE ──────────────────────────────────────────
-  async function analyzeScene() {
-    if (!cameraActive) return;
-
-    if (!apiKey) {
-      alert('Please enter your Anthropic API key at the top of the page.');
-      return;
-    }
-
-    const btn = document.getElementById('analyzeBtn');
-    btn.disabled = true;
-    btn.textContent = 'ANALYZING...';
-    setStatus('analyzing', 'ANALYZING');
-    document.getElementById('scanLine').classList.add('active');
-    document.getElementById('emptyState').style.display = 'none';
-    document.getElementById('settingsGrid').classList.remove('visible');
-    document.getElementById('sceneAnalysis').classList.remove('visible');
-    document.getElementById('tipsBox').classList.remove('visible');
-    document.getElementById('loadingState').classList.add('visible');
-
-    const imageBase64 = captureFrame();
-
-    const cameraNames = {
-      avata2: 'DJI Avata 2 (1/1.7" sensor, fixed lens f/2.8, supports D-Log M, RockSteady/HorizonSteady EIS)',
-      mini4pro: 'DJI Mini 4 Pro (1/1.3" sensor, f/1.7 aperture, supports D-Log M, ActiveTrack, 4K/100fps)',
-      gopro: 'GoPro Hero 13 Black (1/1.9" sensor, Max Lens Mod compatible, GP-Log, HyperSmooth 6.0, up to 5.3K/60fps)'
+  function handlePhoto(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      document.getElementById('previewImg').src = e.target.result;
+      document.getElementById('uploadZone').classList.add('has-image');
+      document.getElementById('retakeBtn').classList.add('visible');
+      imageBase64 = e.target.result.split(',')[1];
     };
-
-    const logLabel = selectedCamera === 'gopro'
-      ? (selectedLog === 'log' ? 'GP-Log (flat)' : 'Standard Color')
-      : (selectedLog === 'log' ? 'D-Log M' : 'Standard/Normal Color');
-
-    const prompt = `You are an expert FPV drone and action camera technician with deep knowledge of color science and exposure.
-
-Camera: ${cameraNames[selectedCamera]}
-Color Profile requested: ${logLabel}
-Shoot intent: ${activeIntents.join(', ')}
-
-Analyze this scene image carefully. Consider: lighting conditions, color temperature, dynamic range challenges, motion blur needs for the intended use, and the 180-degree shutter rule where applicable.
-
-Respond ONLY with valid JSON (no markdown, no code blocks):
-{
-  "iso": "specific ISO value",
-  "shutter": "specific shutter speed (apply 180 rule for fps chosen)",
-  "white_balance": "specific Kelvin value or preset",
-  "nd_filter": "specific ND recommendation with reasoning hint",
-  "color_profile": "exact profile name for this camera and log mode",
-  "resolution_fps": "best resolution and framerate for this intent",
-  "eis": "specific EIS/stabilizer mode recommendation",
-  "scene_read": "2-3 sentences describing what you see: light quality, dynamic range, color temperature, key exposure challenges",
-  "operator_notes": "4-5 specific actionable tips for this exact scene and shoot intent. Be specific, not generic. Include any gotchas."
-}`;
-
+    reader.readAsDataURL(file);
+  }
+  function retakePhoto() {
+    imageBase64 = null;
+    document.getElementById('previewImg').src = '';
+    document.getElementById('uploadZone').classList.remove('has-image');
+    document.getElementById('retakeBtn').classList.remove('visible');
+    document.getElementById('fileInput').value = '';
+    document.getElementById('results').classList.remove('visible');
+    document.getElementById('errorBox').classList.remove('visible');
+  }
+  async function analyzeScene() {
+    if (!apiKey) { showError('Please enter your Anthropic API key and tap SAVE.'); return; }
+    if (!imageBase64) { showError('Please take a photo of your scene first.'); return; }
+    const btn = document.getElementById('analyzeBtn');
+    btn.disabled = true; btn.textContent = 'ANALYZING...';
+    document.getElementById('loadingBar').classList.add('visible');
+    document.getElementById('results').classList.remove('visible');
+    document.getElementById('errorBox').classList.remove('visible');
+    const cameraNames = {
+      avata2: 'DJI Avata 2 (1/1.7" sensor, f/2.8 fixed lens, D-Log M, RockSteady/HorizonSteady)',
+      mini4pro: 'DJI Mini 4 Pro (1/1.3" sensor, f/1.7 aperture, D-Log M, 4K/100fps)',
+      gopro: 'GoPro Hero 13 Black (1/1.9" sensor, GP-Log, HyperSmooth 6.0, 5.3K/60fps)'
+    };
+    const logLabel = selectedCamera === 'gopro' ? (selectedLog === 'log' ? 'GP-Log' : 'Standard Color') : (selectedLog === 'log' ? 'D-Log M' : 'Standard Color');
+    const prompt = `You are an expert FPV drone and action camera operator with deep knowledge of exposure and color science.\n\nCamera: ${cameraNames[selectedCamera]}\nColor Profile: ${logLabel}\nShoot Intent: ${activeIntents.join(', ')}\n\nAnalyze this scene. Consider lighting, dynamic range, color temperature, and the 180-degree shutter rule.\n\nRespond ONLY with valid JSON, no markdown:\n{\n  "iso": "e.g. ISO 400",\n  "shutter": "e.g. 1/120s",\n  "white_balance": "e.g. 5600K",\n  "nd_filter": "e.g. ND16",\n  "color_profile": "exact profile name",\n  "resolution_fps": "e.g. 4K/60fps",\n  "eis": "stabilizer recommendation",\n  "scene_read": "2-3 sentence scene analysis",\n  "operator_notes": "4-5 specific tips for this scene and intent"\n}`;
     try {
       const response = await fetch('/api/analyze', {
-  method: 'POST',
-  headers: { 'Content-Type': 'application/json' },
-  body: JSON.stringify({
-    apiKey,
-    body: {
-      model: 'claude-opus-4-5-20251001',
-      max_tokens: 1000,
-      messages: [{
-        role: 'user',
-        content: [
-          { type: 'image', source: { type: 'base64', media_type: 'image/jpeg', data: imageBase64 } },
-          { type: 'text', text: prompt }
-        ]
-      }]
-    }
-  })
-});
-
-const data = await response.json();
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-api-key': apiKey,
-          'anthropic-version': '2023-06-01',
-          'anthropic-dangerous-allow-browser': 'true'
-        },
-        body: JSON.stringify({
-          model: 'claude-opus-4-5-20251001',
-          max_tokens: 1000,
-          messages: [{
-            role: 'user',
-            content: [
-              { type: 'image', source: { type: 'base64', media_type: 'image/jpeg', data: imageBase64 } },
-              { type: 'text', text: prompt }
-            ]
-          }]
-        })
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ apiKey, imageBase64, prompt })
       });
-
       const data = await response.json();
-
       if (data.error) throw new Error(data.error.message);
-
       const raw = data.content.map(b => b.text || '').join('');
       const clean = raw.replace(/```json|```/g, '').trim();
       const result = JSON.parse(clean);
       showResults(result);
-
     } catch(err) {
-      console.error(err);
-      document.getElementById('loadingState').classList.remove('visible');
-      document.getElementById('emptyState').style.display = 'flex';
-      document.getElementById('emptyState').querySelector('.empty-text').textContent =
-        'Error: ' + (err.message || 'Check API key & connection');
-      setStatus('live', 'ERROR');
+      showError('Analysis failed: ' + (err.message || 'Check your API key.'));
     }
-
-    btn.disabled = false;
-    btn.textContent = '⬡ ANALYZE SCENE';
-    document.getElementById('scanLine').classList.remove('active');
-    setStatus('live', 'LIVE');
+    btn.disabled = false; btn.textContent = '⬡ ANALYZE SCENE';
+    document.getElementById('loadingBar').classList.remove('visible');
   }
-
   function showResults(r) {
-    document.getElementById('loadingState').classList.remove('visible');
     document.getElementById('r-iso').textContent = r.iso || '—';
     document.getElementById('r-shutter').textContent = r.shutter || '—';
     document.getElementById('r-wb').textContent = r.white_balance || '—';
@@ -769,16 +225,15 @@ const data = await response.json();
     document.getElementById('r-eis').textContent = r.eis || '—';
     document.getElementById('sceneText').textContent = r.scene_read || '';
     document.getElementById('tipsText').textContent = r.operator_notes || '';
-
-    document.querySelectorAll('.setting-row').forEach(el => {
-      el.style.animation = 'none';
-      el.offsetHeight;
-      el.style.animation = '';
+    document.querySelectorAll('.result-card, .scene-box, .tips-box').forEach(el => {
+      el.style.animation = 'none'; el.offsetHeight; el.style.animation = '';
     });
-
-    document.getElementById('settingsGrid').classList.add('visible');
-    document.getElementById('sceneAnalysis').classList.add('visible');
-    document.getElementById('tipsBox').classList.add('visible');
+    document.getElementById('results').classList.add('visible');
+    document.getElementById('results').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+  function showError(msg) {
+    const box = document.getElementById('errorBox');
+    box.textContent = msg; box.classList.add('visible');
   }
 </script>
 </body>
