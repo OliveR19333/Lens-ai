@@ -1,0 +1,803 @@
+
+GUARDIAN AERIAL SOLUTIONS
+Property Mapping Workflow System
+Technical Specification — Developer Handoff
+Version
+ | 1.0
+ |
+Client
+ | Guardian Aerial Solutions / TNC
+ |
+Date
+ | June 2026
+ |
+Platform
+ | Mobile PWA + Python Backend
+ |
+Prepared For
+ | Developer Handoff (Claude Code / Dev Team)
+ |
+
+1. System Overview
+The GAS Property Mapping System is a mobile-first Progressive Web App (PWA) that enables field operators to input a property address on the day of a job, automatically generate a DJI-compatible Waypoint mission, fly the property, and produce two scaled planning maps: a flat orthomosaic grid map and an elevation change map. Both maps print on a single 8.5" × 11" sheet at a locked scale that can be proportionally enlarged to any size (e.g., 25" × 30" grid paper).
+
+The system is purpose-built for two primary use cases:
+Irrigation system design and layout planning
+TNC hardscape and landscape construction planning
+
+1.1 System Components
+Component
+ | Technology
+ | Purpose
+ |
+Mobile PWA
+ | React / Vite / Workbox
+ | iPhone-accessible UI, offline-capable
+ |
+Backend API
+ | Python / FastAPI
+ | Parcel data sync, mission generation, map output
+ |
+County GIS Cache
+ | SQLite / GeoJSON
+ | Offline parcel boundary storage
+ |
+Mission Generator
+ | Waypoint OS API / KMZ
+ | DJI Fly-compatible waypoint missions
+ |
+Ortho Processor
+ | WebODM / NodeODM
+ | Orthomosaic + DEM from drone images
+ |
+Feature Detector
+ | YOLOv8 / Roboflow
+ | AI detection of ponds, trees, structures
+ |
+Map Renderer
+ | QGIS Python API / Matplotlib
+ | Scaled B&W grid maps for print
+ |
+
+2. End-to-End User Workflow
+The complete workflow from address input to printed map follows these phases:
+
+Phase 1 — Mission Setup (Field, Day-Of)
+Open PWA on iPhone (works offline)
+Enter property address manually
+System geocodes address → determines county → loads cached parcel boundary
+Review parcel boundary overlay on map
+Confirm and generate Waypoint mission file (KMZ)
+KMZ downloads to phone → loads into DJI Fly app automatically
+Fly mission with Mini 4 Pro
+
+Phase 2 — Processing (Post-Flight, WiFi Required)
+Upload drone images to WebODM via PWA or desktop
+WebODM generates orthomosaic (GeoTIFF) + Digital Elevation Model (DEM)
+Backend runs AI feature detection on orthomosaic
+System identifies and flags: water bodies, tree clusters, structures, driveways
+
+Phase 3 — Map Output
+User selects print scale (auto-calculated to fit 8.5" × 11")
+System generates Map 1: Flat B&W orthomosaic with parcel boundary + feature labels + grid
+System generates Map 2: Elevation contour map with slope direction indicators + feature labels
+Both maps export as print-ready PDF at locked scale with scale bar
+Scale ratio printed on map for proportional enlargement to 25" × 30" grid paper
+
+3. Mobile PWA Architecture
+3.1 Technology Stack
+Framework
+ | React 18 + Vite
+ |
+PWA Engine
+ | Workbox (Google) — service worker, offline caching
+ |
+Map Display
+ | MapLibre GL JS (offline vector tiles)
+ |
+State Management
+ | Zustand
+ |
+Local Storage
+ | IndexedDB (parcel GeoJSON cache)
+ |
+HTTP Client
+ | Axios with offline queue
+ |
+Styling
+ | Tailwind CSS
+ |
+Icons
+ | Lucide React
+ |
+
+3.2 PWA Requirements
+Installable on iPhone home screen (Add to Home Screen)
+Service worker caches all app assets for full offline use
+County parcel GeoJSON stored in IndexedDB (up to ~50MB per county)
+Address geocoding cached locally for recently searched addresses
+Offline-first: all mission generation runs client-side when offline
+Auto-sync trigger on WiFi connect: checks for parcel data updates
+
+3.3 Screen Flow
+Login Screen
+ | Username + password, JWT auth, persistent session
+ |
+Home / Dashboard
+ | Recent projects, sync status, county cache status
+ |
+New Mission
+ | Address input → map preview → mission settings → generate
+ |
+Parcel Preview
+ | MapLibre map with parcel boundary overlay, confirm before fly
+ |
+Mission Output
+ | KMZ download button + DJI Fly deep link
+ |
+Upload Images
+ | Post-flight: select images → push to WebODM queue
+ |
+Map Viewer
+ | View flat map and elevation map per project
+ |
+Print / Export
+ | Scale selector → PDF generation → share sheet
+ |
+Settings
+ | County selection, monthly sync schedule, account
+ |
+
+3.4 DJI Fly Integration
+The KMZ mission file must be transferred to the DJI RC controller. The recommended integration flow is:
+Generate KMZ on backend → return download URL to PWA
+PWA triggers iOS share sheet with KMZ file
+User selects "Copy to DJI Fly" or saves to Files app → manually imports to DJI Fly
+⚑  NOTE: Full programmatic DJI Fly deep-link integration is not publicly documented by DJI. The share sheet approach is the most reliable cross-device method. Monitor DJI developer updates for direct app-to-app transfer APIs.
+
+4. Backend API Specification
+4.1 Stack
+Language
+ | Python 3.11+
+ |
+Framework
+ | FastAPI
+ |
+Database
+ | PostgreSQL + PostGIS (spatial queries)
+ |
+Task Queue
+ | Celery + Redis (async WebODM jobs, monthly sync)
+ |
+File Storage
+ | Local filesystem or S3-compatible (GeoTIFFs, PDFs)
+ |
+Auth
+ | JWT (PyJWT) — single user or small team
+ |
+Hosting
+ | VPS (DigitalOcean / Linode) or Mac Mini server
+ |
+
+4.2 API Endpoints
+Method + Path
+ | Description
+ | Auth
+ |
+POST /auth/login
+ | Returns JWT token
+ | None
+ |
+GET /counties
+ | List supported counties + cache status
+ | JWT
+ |
+POST /geocode
+ | Address → lat/lng + county detection
+ | JWT
+ |
+POST /parcel/lookup
+ | Lat/lng → parcel boundary GeoJSON
+ | JWT
+ |
+POST /mission/generate
+ | Parcel GeoJSON → Waypoint KMZ file
+ | JWT
+ |
+GET /mission/{id}/kmz
+ | Download generated KMZ file
+ | JWT
+ |
+POST /project/create
+ | Create new mapping project
+ | JWT
+ |
+POST /project/{id}/upload
+ | Upload drone images to WebODM
+ | JWT
+ |
+GET /project/{id}/status
+ | WebODM processing status
+ | JWT
+ |
+GET /project/{id}/maps
+ | Return flat map + elevation map PDFs
+ | JWT
+ |
+POST /project/{id}/features
+ | Trigger AI feature detection
+ | JWT
+ |
+GET /sync/parcels
+ | Manual trigger parcel sync
+ | JWT
+ |
+
+4.3 Geocoding Service
+Use the US Census Geocoder API (free, no key required) as primary, with Google Maps Geocoding API as fallback:
+# Primary: US Census Geocoder (free)
+GET https://geocoding.geo.census.gov/geocoder/locations/onelineaddress
+  ?address={encoded_address}&benchmark=2020&format=json
+
+# Fallback: Google Maps Geocoding API
+GET https://maps.googleapis.com/maps/api/geocode/json
+  ?address={encoded_address}&key={GOOGLE_API_KEY}
+ |
+
+5. County GIS Parcel Data Integration
+5.1 Supported Counties
+County
+ | GIS Portal URL
+ | Export Format
+ |
+Blount County, TN
+ | https://www.blounttn.org/2153/GIS-Mapping
+ | Shapefile / KML
+ |
+Knox County, TN
+ | https://www.knoxplanning.org/gis/
+ | Shapefile / GeoJSON
+ |
+Sevier County, TN
+ | https://www.seviercountytn.org/gis/
+ | Shapefile / KML
+ |
+
+⚑  NOTE: Each county GIS portal must be manually verified at build time. Some portals require free account registration for bulk shapefile download. Confirm current download URLs and formats before implementation.
+
+5.2 Monthly Sync Process
+The Celery beat scheduler runs a monthly parcel sync job:
+Celery beat fires on the 1st of each month at 2:00 AM local time
+For each enabled county: download latest shapefile or GeoJSON from GIS portal
+Convert shapefile to GeoJSON using pyogrio or geopandas if needed
+Store in PostGIS database with county index
+Package per-county GeoJSON bundles for PWA download (compressed, ~10–30MB each)
+PWA detects new version hash on next WiFi connection → prompts user to sync
+User confirms → IndexedDB updated with fresh parcel data
+
+5.3 Parcel Lookup Logic
+Given a geocoded lat/lng coordinate, the backend performs a PostGIS point-in-polygon query:
+-- PostGIS query: find parcel containing the given point
+SELECT parcel_id, owner, address, geom
+FROM parcels_{county}
+WHERE ST_Contains(geom, ST_SetSRID(ST_MakePoint({lng}, {lat}), 4326))
+LIMIT 1;
+
+-- Return GeoJSON of parcel boundary
+SELECT ST_AsGeoJSON(geom) FROM parcels_{county}
+WHERE parcel_id = {parcel_id};
+ |
+
+6. Waypoint Mission Generation
+6.1 Flight Parameters
+Drone
+ | DJI Mini 4 Pro
+ |
+Mission Type
+ | Grid / Lawnmower pattern (nadir, camera straight down)
+ |
+Default Altitude
+ | 120 ft AGL (adjustable 80–200 ft)
+ |
+Forward Overlap
+ | 80% (adjustable)
+ |
+Side Overlap
+ | 75% (adjustable)
+ |
+Camera Angle
+ | 90° nadir (straight down)
+ |
+Speed
+ | Auto-calculated by DJI Fly based on altitude + overlap
+ |
+Output Format
+ | KMZ (DJI Wayline format, compatible with DJI Fly)
+ |
+
+6.2 KMZ File Structure
+A DJI-compatible mapping KMZ contains a wayline.wpml file inside a wpmz folder. Key structure:
+mission.kmz
+└── wpmz/
+    ├── waylines.wpml     ← flight path, altitude, overlap settings
+    └── template.kml      ← area boundary polygon
+
+<!-- waylines.wpml core fields -->
+<missionConfig>
+  <flyToWaylineMode>safely</flyToWaylineMode>
+  <finishAction>goHome</finishAction>
+  <exitOnRCLost>goContinue</exitOnRCLost>
+  <droneInfo><droneEnumValue>67</droneEnumValue></droneInfo>  <!-- Mini 4 Pro -->
+</missionConfig>
+ |
+
+6.3 Mission Generation Logic
+Receive parcel boundary GeoJSON polygon
+Calculate bounding box + add 15ft buffer around all edges
+Compute grid flight lines at selected altitude and overlap settings
+Generate waypoints along each flight line with photo trigger intervals
+Build waylines.wpml and template.kml XML files
+Zip into .kmz archive and return to PWA for download
+⚑  NOTE: Use the Waypoint OS API (Pilotbyte) for mission file generation where the API supports programmatic KMZ creation. If direct API calls are not available, implement the KMZ builder natively in Python using the DJI WPML 2.0 specification.
+
+7. WebODM Integration
+7.1 Setup
+WebODM runs as a self-hosted Docker instance on the operator's Mac or a VPS. It exposes a REST API for job submission and result retrieval.
+Deployment
+ | Docker Compose (local Mac or VPS)
+ |
+Default Port
+ | 8000
+ |
+API Base URL
+ | http://localhost:8000/api/
+ |
+Auth
+ | JWT token from WebODM /api/token-auth/
+ |
+Processing Options
+ | dsm: true, dtm: true, orthophoto-resolution: 2
+ |
+
+7.2 Processing Pipeline
+# 1. Authenticate
+POST /api/token-auth/
+  { "username": "admin", "password": "..." }
+  → { "token": "abc123" }
+
+# 2. Create project
+POST /api/projects/
+  { "name": "GAS_2024_ProjectName" }
+  → { "id": 42 }
+
+# 3. Upload images + start task
+POST /api/projects/42/tasks/
+  multipart: images[] + options JSON
+  options: [{"name":"dsm","value":true},{"name":"dtm","value":true},
+            {"name":"orthophoto-resolution","value":2}]
+  → { "id": "task-uuid" }
+
+# 4. Poll status
+GET /api/projects/42/tasks/task-uuid/
+  → { "status": 40 }  // 40 = COMPLETED
+
+# 5. Download outputs
+GET /api/projects/42/tasks/task-uuid/download/orthophoto.tif
+GET /api/projects/42/tasks/task-uuid/download/dsm.tif
+GET /api/projects/42/tasks/task-uuid/download/dtm.tif
+ |
+
+7.3 Output Files
+orthophoto.tif
+ | GeoTIFF orthomosaic — used for flat map and AI feature detection
+ |
+dsm.tif
+ | Digital Surface Model — elevation including trees/structures
+ |
+dtm.tif
+ | Digital Terrain Model — bare earth elevation, used for contour generation
+ |
+georef: EPSG:4326
+ | All outputs in WGS84 — compatible with county GIS parcel data
+ |
+
+8. AI Feature Detection
+8.1 Overview
+After WebODM completes orthomosaic processing, the backend runs an AI object detection model over the GeoTIFF to identify and georeference key planning features. Detected features are overlaid on both output maps with labeled markers.
+
+8.2 Target Feature Classes
+Feature
+ | Detection Method
+ | Planning Relevance
+ |
+Water bodies / ponds
+ | Spectral (blue/reflective pixel clustering)
+ | Irrigation source, drainage routing
+ |
+Tree clusters
+ | NDVI-proxy (green density) + canopy shadow
+ | Obstacle avoidance, root zone planning
+ |
+Structures / buildings
+ | YOLOv8 object detection
+ | Setback compliance, utility entry points
+ |
+Driveways / hardscape
+ | Edge detection + gray tone clustering
+ | Access routes, drainage direction
+ |
+Fence lines
+ | Edge detection + linear feature extraction
+ | Property boundary confirmation
+ |
+Slope direction
+ | DTM gradient analysis
+ | Water flow routing for irrigation
+ |
+
+8.3 Implementation
+Model
+ | YOLOv8n (nano) — lightweight, runs on Mac CPU/GPU
+ |
+Pre-trained Dataset
+ | Roboflow Universe — aerial property detection models
+ |
+Library
+ | ultralytics Python package
+ |
+Input
+ | Orthomosaic GeoTIFF tiled into 640×640 px chips
+ |
+Output
+ | GeoJSON FeatureCollection with detected features + confidence scores
+ |
+Minimum Confidence
+ | 0.45 (configurable)
+ |
+Water Detection
+ | rasterio + numpy spectral clustering (HSV blue range)
+ |
+Slope Analysis
+ | rasterio gradient on DTM → aspect + slope rasters
+ |
+# Python detection pipeline pseudocode
+from ultralytics import YOLO
+import rasterio, numpy as np, geopandas as gpd
+
+# 1. Load ortho, tile into chips
+chips = tile_geotiff("orthophoto.tif", size=640, overlap=64)
+
+# 2. Run YOLO on each chip
+model = YOLO("yolov8n-aerial-property.pt")
+detections = [model(chip) for chip in chips]
+
+# 3. Merge detections, apply geo transform
+features = merge_detections_to_geojson(detections, ortho_transform)
+
+# 4. Water body detection via spectral analysis
+water_polygons = detect_water_spectral("orthophoto.tif")
+features["features"].extend(water_polygons)
+
+# 5. Slope from DTM
+slope, aspect = compute_slope_aspect("dtm.tif")
+slope_vectors = slope_to_arrows(slope, aspect, spacing=50)
+ |
+
+9. Map Output & Print Scaling
+9.1 Map 1 — Flat Planning Map
+A black-and-white orthomosaic with clean, high-contrast overlay layers suitable for hand annotation and plan drawing.
+Base Layer
+ | Orthomosaic converted to grayscale (desaturated GeoTIFF)
+ |
+Parcel Boundary
+ | Bold black outline (3pt), dashed line at 50% opacity inside
+ |
+Feature Markers
+ | Labeled icons: pond, trees, structure, driveway, fence
+ |
+Grid
+ | Measured grid lines at real-world intervals (e.g., 10 ft squares)
+ |
+Scale Bar
+ | Graphical bar + text ratio (e.g., 1" = 30 ft)
+ |
+North Arrow
+ | Standard north indicator, oriented to true north
+ |
+Title Block
+ | Address, date, GAS logo placeholder, scale, county
+ |
+Output Format
+ | PDF (vector overlays) + PNG fallback
+ |
+Paper Size
+ | 8.5" × 11" (Letter) — single sheet
+ |
+
+9.2 Map 2 — Elevation Change Map
+Base Layer
+ | Grayscale hillshade from DSM (terrain relief)
+ |
+Contour Lines
+ | 1 ft interval contours (minor), 5 ft interval (major, bold)
+ |
+Slope Arrows
+ | Flow direction indicators at 50ft spacing from DTM aspect
+ |
+Feature Markers
+ | Same feature labels as Map 1
+ |
+Elevation Labels
+ | Spot elevations at key points (corners, high/low points)
+ |
+Color Mode
+ | Grayscale only (printer-safe)
+ |
+Accuracy Note
+ | Aggregate accuracy ±1 ft; GCP-free drone GPS positioning
+ |
+
+9.3 Scale Calculation
+The system auto-calculates the best-fit scale for the parcel on 8.5" × 11" with 0.5" margins (printable area: 7.5" × 10"):
+# Scale calculation logic
+printable_width_inches  = 7.5
+printable_height_inches = 10.0
+
+# Get parcel dimensions in feet (from GeoJSON bounds)
+parcel_width_ft  = calculate_width(parcel_geojson)   # e.g., 300 ft
+parcel_height_ft = calculate_height(parcel_geojson)  # e.g., 400 ft
+
+# Calculate scale denominators needed to fit each dimension
+scale_w = parcel_width_ft  / printable_width_inches   # 300/7.5 = 40
+scale_h = parcel_height_ft / printable_height_inches  # 400/10  = 40
+
+# Use the larger (more zoomed out) scale, round up to nearest 5
+scale = ceil(max(scale_w, scale_h) / 5) * 5   # → 1" = 40 ft
+
+# Print note on map: "Scale: 1 inch = 40 feet | Enlarge 3.33x for 25x30 grid"
+enlargement_factor = 25 / 8.5   # = 2.94x  (or 30/11 = 2.73x for height)
+ |
+
+9.4 Map Generation Library
+Primary Option
+ | QGIS Python API (PyQGIS) — full cartographic control
+ |
+Alternative
+ | Matplotlib + rasterio + geopandas — lighter, no QGIS dependency
+ |
+PDF Export
+ | QGIS Print Layout → PDF / Matplotlib savefig(dpi=300, format=pdf)
+ |
+Recommended DPI
+ | 300 DPI minimum for print clarity at 8.5×11
+ |
+Font
+ | Arial or Helvetica for all labels (universally available)
+ |
+
+10. Offline Architecture
+10.1 What Works Offline
+Address entry + geocoding
+ | Cached geocoding for recently searched addresses
+ |
+Parcel lookup
+ | Full county parcel GeoJSON in IndexedDB
+ |
+Map display
+ | MapLibre with offline tile cache (vector basemap)
+ |
+Mission generation
+ | KMZ builder runs client-side in browser (WASM or JS)
+ |
+KMZ download
+ | Served from local cache
+ |
+Project creation
+ | Queued locally, synced when online
+ |
+
+10.2 What Requires Connectivity
+Image upload to WebODM
+ | WiFi or LTE required — files too large for offline queue
+ |
+WebODM processing
+ | Runs on server — requires network access
+ |
+Map PDF generation
+ | Runs on backend — requires network access
+ |
+Monthly parcel sync
+ | Downloads new county GeoJSON bundles
+ |
+Authentication
+ | Initial login requires connectivity
+ |
+
+10.3 Service Worker Strategy
+App Shell
+ | Cache-first — all JS/CSS/HTML cached at install
+ |
+API calls
+ | Network-first with offline fallback queue
+ |
+Parcel GeoJSON
+ | IndexedDB — not service worker cache (too large)
+ |
+Tile basemap
+ | MapLibre offline tile pack (pre-download per county)
+ |
+Sync trigger
+ | Background sync API — fires when WiFi detected
+ |
+
+11. Data Model
+11.1 Project Schema
+Project {
+  id:            UUID
+  created_at:    DateTime
+  address:       String
+  county:        Enum(blount, knox, sevier)
+  lat:           Float
+  lng:           Float
+  parcel_id:     String
+  parcel_geojson: GeoJSON Polygon
+  status:        Enum(setup, mission_ready, flying, processing, complete)
+  mission_kmz:   File path
+  ortho_tif:     File path
+  dsm_tif:       File path
+  dtm_tif:       File path
+  features_geojson: GeoJSON FeatureCollection
+  map_flat_pdf:  File path
+  map_elev_pdf:  File path
+  print_scale:   String (e.g., "1 inch = 40 feet")
+  notes:         String
+  use_case:      Enum(irrigation, hardscape, both)
+}
+ |
+
+11.2 Feature GeoJSON Schema
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "geometry": { "type": "Polygon", "coordinates": [...] },
+      "properties": {
+        "feature_type": "pond",          // pond|trees|structure|driveway|fence|slope
+        "label": "Pond",
+        "confidence": 0.87,
+        "area_sqft": 1240.5,
+        "notes": ""
+      }
+    }
+  ]
+}
+ |
+
+12. Development Phases & Priorities
+Phase 1 — MVP (Immediate Priority)
+Get the operator flying on day one:
+PWA scaffold: address input → geocode → parcel lookup → map display
+County GIS integration: Blount County first, Knox + Sevier next
+KMZ mission generator: parcel polygon → DJI Fly KMZ download
+Offline parcel cache: IndexedDB storage + monthly sync
+DJI Fly handoff: share sheet export of KMZ
+
+Phase 2 — Processing Pipeline
+WebODM Docker setup + API integration
+Image upload workflow from PWA
+Orthomosaic + DEM retrieval from WebODM
+Basic flat map generation: grayscale ortho + parcel boundary + grid + scale bar
+
+Phase 3 — Elevation & Features
+Contour line generation from DTM
+Slope / flow direction arrows
+AI feature detection pipeline (YOLOv8 + spectral water detection)
+Feature overlay on both maps
+
+Phase 4 — Polish & Scale
+Add Knox County and Sevier County GIS feeds
+User annotation layer (manual feature marking on map)
+Project history and archive
+Multi-user login (Devan Teaster access)
+
+13. Environment & Dependencies
+13.1 Backend Python Packages
+# requirements.txt
+fastapi>=0.111
+uvicorn[standard]
+celery[redis]
+redis
+sqlalchemy
+psycopg2-binary
+geopandas
+pyogrio
+rasterio
+shapely
+numpy
+requests
+pyjwt
+python-multipart
+ultralytics          # YOLOv8
+torch                # PyTorch (CPU build fine for Mac)
+Pillow
+matplotlib
+reportlab            # PDF generation
+ |
+
+13.2 Frontend npm Packages
+# package.json dependencies
+"react": "^18"
+"react-dom": "^18"
+"vite": "^5"
+"vite-plugin-pwa": "^0.19"
+"workbox-window": "^7"
+"maplibre-gl": "^4"
+"zustand": "^4"
+"axios": "^1"
+"tailwindcss": "^3"
+"lucide-react": "^0.383"
+ |
+
+13.3 Infrastructure
+Mac / Dev Server
+ | MacBook Pro M-series — WebODM Docker + Backend API
+ |
+WebODM
+ | Docker Desktop — docker-compose up from webodm directory
+ |
+Database
+ | PostgreSQL 15 + PostGIS 3 extension
+ |
+Redis
+ | Docker container — Celery broker
+ |
+Remote Access
+ | Tailscale (for accessing Mac server from field if needed)
+ |
+Domain / HTTPS
+ | Cloudflare Tunnel or ngrok for PWA HTTPS requirement
+ |
+⚑  NOTE: PWA install on iPhone requires HTTPS. Use Cloudflare Tunnel (free) to expose local backend with a valid SSL certificate, or deploy backend to a VPS with Let's Encrypt.
+
+14. Developer Handoff Notes
+14.1 Build Order Recommendation
+Start with Phase 1 MVP only. Do not build WebODM or AI detection until KMZ generation and offline parcel lookup are solid. The operator needs to be able to fly within the first sprint.
+
+14.2 Key Constraints
+iPhone-first: test every screen on Safari iOS — PWA installs via Safari only on iOS
+Offline is non-negotiable: field sites in East TN often have poor LTE coverage
+DJI Mini 4 Pro: droneEnumValue in WPML is 67 — confirm on DJI WPML 2.0 spec
+Map output must be 8.5×11 single sheet, 300 DPI minimum, PDF format
+Scale bar and scale ratio text required on every map for field enlargement
+All elevation data in feet (not meters) — US standard for contractor use
+
+14.3 Questions to Resolve at Kickoff
+Confirm Waypoint OS API endpoint for programmatic KMZ generation — or implement native WPML builder
+Verify Blount, Knox, Sevier county GIS download URLs and current shapefile schemas
+Confirm WebODM hosting location: Mac Mini server vs VPS
+Select YOLOv8 aerial detection model from Roboflow Universe — test on sample East TN imagery
+Confirm HTTPS solution for PWA: Cloudflare Tunnel or VPS deployment
+
+14.4 Contact / Project Context
+Client
+ | Ryan Olive — Guardian Aerial Solutions / TNC
+ |
+Location
+ | Maryville, Tennessee
+ |
+Primary Drone
+ | DJI Mini 4 Pro
+ |
+Use Cases
+ | Irrigation planning, hardscape/landscape construction
+ |
+Counties
+ | Blount, Knox, Sevier (East Tennessee)
+ |
+Dev Environment
+ | MacBook Pro M-series Max — primary build machine
+ |
+Spec Version
+ | 1.0 — June 2026
+ |
