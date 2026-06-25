@@ -1,11 +1,26 @@
 import { useEffect, useState } from 'react'
-import { RefreshCw } from 'lucide-react'
+import { RefreshCw, Upload } from 'lucide-react'
 import { useStore } from '../store/useStore'
 import { listCounties, syncParcels } from '../api/client'
-import { getCachedCounties } from '../db/parcelCache'
+import { getCachedCounties, saveCountyBundle } from '../db/parcelCache'
 import { Button, Card, Banner } from '../components/ui'
 
-// Settings (spec §3.3) — county selection, monthly sync schedule, account.
+const COUNTIES = [
+  { county: 'blount', county_name: 'Blount County' },
+  { county: 'knox', county_name: 'Knox County' },
+  { county: 'sevier', county_name: 'Sevier County' }
+]
+
+// Cheap content hash so the PWA can tell when a bundle changed (spec §5.2).
+function quickHash(str) {
+  let h = 5381
+  for (let i = 0; i < str.length; i++) h = ((h << 5) + h + str.charCodeAt(i)) >>> 0
+  return h.toString(16)
+}
+
+// Settings (spec §3.3) — county selection, sync, account, and a manual
+// parcel-data import so the offline field flow works before the automated
+// monthly GIS sync is wired (spec §5.2 is a backend stub).
 export default function Settings() {
   const username = useStore((s) => s.username)
   const online = useStore((s) => s.online)
@@ -14,9 +29,14 @@ export default function Settings() {
   const [cached, setCached] = useState([])
   const [msg, setMsg] = useState('')
   const [busy, setBusy] = useState(false)
+  const [importCounty, setImportCounty] = useState('blount')
+
+  async function refreshCache() {
+    setCached(await getCachedCounties())
+  }
 
   useEffect(() => {
-    getCachedCounties().then(setCached)
+    refreshCache()
     if (online) listCounties().then(setCounties).catch(() => {})
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [online])
@@ -28,19 +48,33 @@ export default function Settings() {
       const res = await syncParcels()
       setMsg(res.message || 'Parcel sync started.')
     } catch {
-      setMsg('Could not start sync — server unreachable.')
+      setMsg('Could not start server sync — use manual import below to work offline now.')
     } finally {
       setBusy(false)
     }
   }
 
-  const list = counties.length
-    ? counties
-    : [
-        { county: 'blount', county_name: 'Blount County' },
-        { county: 'knox', county_name: 'Knox County' },
-        { county: 'sevier', county_name: 'Sevier County' }
-      ]
+  async function onImport(e) {
+    const file = e.target.files?.[0]
+    if (!file) return
+    setMsg('')
+    try {
+      const text = await file.text()
+      const geojson = JSON.parse(text)
+      if (geojson.type !== 'FeatureCollection' || !Array.isArray(geojson.features)) {
+        throw new Error('Not a GeoJSON FeatureCollection.')
+      }
+      await saveCountyBundle(importCounty, quickHash(text), geojson)
+      await refreshCache()
+      setMsg(`Imported ${geojson.features.length} parcels into ${importCounty} — available offline.`)
+    } catch (err) {
+      setMsg(`Import failed: ${err.message}`)
+    } finally {
+      e.target.value = ''
+    }
+  }
+
+  const list = counties.length ? counties : COUNTIES
 
   return (
     <div className="p-4 space-y-4">
@@ -64,12 +98,42 @@ export default function Settings() {
         {msg && <div className="mb-3"><Banner tone="info">{msg}</Banner></div>}
         <Button onClick={onSync} disabled={busy || !online} variant="secondary">
           <span className="inline-flex items-center justify-center gap-2">
-            <RefreshCw size={16} /> {busy ? 'Starting sync…' : 'Sync parcels now'}
+            <RefreshCw size={16} /> {busy ? 'Starting sync…' : 'Sync from server'}
           </span>
         </Button>
         <p className="text-xs text-slate-400 mt-2">
           Automatic sync runs monthly on the 1st at 2:00 AM local time (spec §5.2).
         </p>
+      </Card>
+
+      <Card>
+        <h3 className="font-semibold text-slate-700 mb-2 inline-flex items-center gap-2">
+          <Upload size={16} /> Import parcel data (offline)
+        </h3>
+        <p className="text-sm text-slate-500 mb-3">
+          On WiFi, download a county’s parcel GeoJSON from its GIS portal, then load
+          it here. It’s stored on the phone for fully offline lookup in the field.
+        </p>
+        <div className="flex items-center gap-2 mb-3">
+          <select
+            value={importCounty}
+            onChange={(e) => setImportCounty(e.target.value)}
+            className="rounded-xl border border-slate-300 px-3 py-2 text-sm"
+          >
+            {COUNTIES.map((c) => (
+              <option key={c.county} value={c.county}>{c.county_name}</option>
+            ))}
+          </select>
+          <label className="flex-1">
+            <span className="sr-only">Choose GeoJSON</span>
+            <input
+              type="file"
+              accept=".geojson,application/geo+json,application/json"
+              onChange={onImport}
+              className="block w-full text-sm"
+            />
+          </label>
+        </div>
       </Card>
 
       <Card>

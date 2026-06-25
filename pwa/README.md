@@ -43,10 +43,22 @@ src/
 
 ## Offline behavior (spec §10)
 
+The **entire field flow runs client-side** so it works with no signal and no
+server (spec §10.1). See [`../docs/OFFLINE_AND_HOSTING.md`](../docs/OFFLINE_AND_HOSTING.md).
+
+- **Locate**: device GPS via `src/lib/geolocation.js` (works offline) — "Use my
+  location". Address geocoding is the online/cached path.
+- **Parcel lookup**: `src/lib/offline/parcelLookup.js` — point-in-polygon against
+  the cached county GeoJSON in IndexedDB (browser port of the backend PostGIS
+  query).
+- **Mission + measuring**: `src/lib/offline/` ports the backend geo/grid/WPML/
+  scale logic; `mission.js` assembles the `.kmz` in-browser with JSZip. Output is
+  numerically identical to the Python backend.
 - **App shell**: precached (cache-first) by Workbox.
 - **Geocoding**: network-first with an IndexedDB fallback for recently searched
   addresses.
 - **Parcel GeoJSON**: stored in IndexedDB (not the SW cache — bundles are large).
+  Load it via Settings → Import parcel data, or the monthly server sync.
 - **Basemap tiles**: cache-first MapLibre tile cache.
 - **Write queue**: project creation is queued offline and drained on reconnect.
 

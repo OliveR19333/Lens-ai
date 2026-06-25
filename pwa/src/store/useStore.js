@@ -22,11 +22,14 @@ export const useStore = create(
         address: '',
         geocode: null, // { lat, lng, county, county_name }
         parcel: null, // GeoJSON + metadata
-        mission: null // { mission_id, summary, kmz_url }
+        mission: null, // { summary, scale, generatedAt }
+        kmzBlob: null // on-device generated KMZ (in-memory only)
       },
       setDraft: (patch) => set({ draft: { ...get().draft, ...patch } }),
       resetDraft: () =>
-        set({ draft: { address: '', geocode: null, parcel: null, mission: null } }),
+        set({
+          draft: { address: '', geocode: null, parcel: null, mission: null, kmzBlob: null }
+        }),
 
       // --- county cache status (mirrors backend /counties) ---
       counties: [],

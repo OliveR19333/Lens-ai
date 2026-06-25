@@ -102,6 +102,12 @@ docker compose up -d           # Postgres/PostGIS + Redis + WebODM + backend
 
 ---
 
+> **Field flow is fully offline.** Locating the property (phone GPS), finding the
+> parcel, measuring, and generating the DJI KMZ all run **on the iPhone** against
+> pre-synced county data — no Mac, no signal. Only the post-flight half (WebODM
+> stitching, map PDFs) needs WiFi to the Mac. See
+> [`docs/OFFLINE_AND_HOSTING.md`](docs/OFFLINE_AND_HOSTING.md).
+
 ## Build order (spec §14.1)
 
 > Start with **Phase 1 MVP only.** Do not build WebODM or AI detection until KMZ

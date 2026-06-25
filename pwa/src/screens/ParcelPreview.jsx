@@ -1,11 +1,14 @@
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { Ruler } from 'lucide-react'
 import { useStore } from '../store/useStore'
-import { generateMission } from '../api/client'
-import { Button, Card, Field, TextInput, Banner } from '../components/ui'
+import { buildMissionKmz } from '../lib/offline/mission'
+import { computePrintScale } from '../lib/offline/scale'
+import { Button, Card, Field, Banner } from '../components/ui'
 import ParcelMap from '../components/ParcelMap'
 
-// Parcel Preview (spec §3.3) — confirm boundary + flight params before fly.
+// Parcel Preview (spec §3.3) — confirm boundary, see the measurements, set
+// flight params, and generate the KMZ entirely on-device (offline, spec §10.1).
 export default function ParcelPreview() {
   const navigate = useNavigate()
   const draft = useStore((s) => s.draft)
@@ -20,23 +23,37 @@ export default function ParcelPreview() {
   const parcelGeojson = draft.parcel?.geojson
   const center = draft.geocode ? [draft.geocode.lng, draft.geocode.lat] : undefined
 
+  // Measuring readout — computed on-device, instantly, offline (spec §9.3).
+  const measure = useMemo(() => {
+    if (!parcelGeojson) return null
+    try {
+      return computePrintScale(parcelGeojson)
+    } catch {
+      return null
+    }
+  }, [parcelGeojson])
+
   async function onGenerate() {
     if (!parcelGeojson) {
-      setErr('No parcel boundary loaded. Go back and search an address.')
+      setErr('No parcel boundary loaded. Go back and locate a property.')
       return
     }
     setErr('')
     setBusy(true)
     try {
-      const mission = await generateMission(parcelGeojson, {
+      const result = await buildMissionKmz(parcelGeojson, {
         altitudeFt,
         forwardOverlap: forwardOverlap / 100,
         sideOverlap: sideOverlap / 100
       })
-      setDraft({ mission })
+      // Keep the on-device blob for the share-sheet handoff.
+      setDraft({
+        mission: { summary: result.summary, scale: result.scale, generatedAt: Date.now() },
+        kmzBlob: result.kmzBlob
+      })
       navigate('/mission')
     } catch (e) {
-      setErr(e?.response?.data?.detail || 'Mission generation failed.')
+      setErr(e?.message || 'Mission generation failed.')
     } finally {
       setBusy(false)
     }
@@ -48,7 +65,8 @@ export default function ParcelPreview() {
 
       {!parcelGeojson ? (
         <Banner tone="warn">
-          No parcel loaded. <button className="underline" onClick={() => navigate('/new')}>Search an address</button>.
+          No parcel loaded.{' '}
+          <button className="underline" onClick={() => navigate('/new')}>Locate a property</button>.
         </Banner>
       ) : (
         <>
@@ -56,18 +74,32 @@ export default function ParcelPreview() {
             <ParcelMap geojson={parcelGeojson} center={center} />
           </Card>
 
+          {measure && (
+            <Card>
+              <h3 className="font-semibold text-slate-700 mb-2 inline-flex items-center gap-2">
+                <Ruler size={16} /> Measurements
+              </h3>
+              <dl className="grid grid-cols-2 gap-y-1 text-sm">
+                <dt className="text-slate-500">Width</dt>
+                <dd className="text-right">{measure.parcelWidthFt} ft</dd>
+                <dt className="text-slate-500">Height</dt>
+                <dd className="text-right">{measure.parcelHeightFt} ft</dd>
+                <dt className="text-slate-500">Area</dt>
+                <dd className="text-right">
+                  {measure.parcelAreaSqft.toLocaleString()} ft² ({measure.parcelAreaAcres} ac)
+                </dd>
+                <dt className="text-slate-500">Print scale</dt>
+                <dd className="text-right">{measure.label}</dd>
+              </dl>
+              <p className="text-xs text-slate-400 mt-2">{measure.note}</p>
+            </Card>
+          )}
+
           <Card>
             <h3 className="font-semibold text-slate-700 mb-2">Flight settings (spec §6.1)</h3>
             <Field label={`Altitude: ${altitudeFt} ft AGL`} hint="Adjustable 80–200 ft.">
-              <input
-                type="range"
-                min="80"
-                max="200"
-                step="5"
-                value={altitudeFt}
-                onChange={(e) => setAltitudeFt(Number(e.target.value))}
-                className="w-full"
-              />
+              <input type="range" min="80" max="200" step="5" value={altitudeFt}
+                onChange={(e) => setAltitudeFt(Number(e.target.value))} className="w-full" />
             </Field>
             <div className="grid grid-cols-2 gap-3">
               <Field label={`Forward overlap: ${forwardOverlap}%`}>
@@ -84,7 +116,7 @@ export default function ParcelPreview() {
           {err && <Banner tone="error">{err}</Banner>}
 
           <Button onClick={onGenerate} disabled={busy}>
-            {busy ? 'Generating KMZ…' : 'Confirm & generate mission'}
+            {busy ? 'Generating KMZ…' : 'Confirm & generate mission (offline)'}
           </Button>
         </>
       )}
