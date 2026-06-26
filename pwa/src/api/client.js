@@ -74,6 +74,53 @@ export async function createProject(payload) {
   return data
 }
 
+// ---- Project history / archive (spec §12) ----
+export async function listProjects(includeArchived = false) {
+  const { data } = await api.get('/project/list', { params: { include_archived: includeArchived } })
+  return data
+}
+
+export async function getProject(projectId) {
+  const { data } = await api.get(`/project/${projectId}`)
+  return data
+}
+
+export async function setProjectArchived(projectId, archived) {
+  const { data } = await api.post(`/project/${projectId}/archive`, null, { params: { archived } })
+  return data
+}
+
+// ---- Manual annotations (spec §12) ----
+export async function getAnnotations(projectId) {
+  const { data } = await api.get(`/project/${projectId}/annotations`)
+  return data
+}
+
+export async function addAnnotation(projectId, featureType, geometry, label = '', notes = '') {
+  const { data } = await api.post(`/project/${projectId}/annotations`, {
+    feature_type: featureType,
+    geometry,
+    label,
+    notes
+  })
+  return data
+}
+
+export async function deleteAnnotation(projectId, annotationId) {
+  const { data } = await api.delete(`/project/${projectId}/annotations/${annotationId}`)
+  return data
+}
+
+// ---- Team members (spec §12) ----
+export async function createUser(username, password, displayName = '') {
+  const { data } = await api.post('/auth/users', {
+    username,
+    password,
+    display_name: displayName
+  })
+  return data
+}
+
 export async function uploadImages(projectId, files) {
   const form = new FormData()
   for (const f of files) form.append('images', f)

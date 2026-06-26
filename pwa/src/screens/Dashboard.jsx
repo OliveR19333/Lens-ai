@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Plus, RefreshCw, Database } from 'lucide-react'
+import { Plus, RefreshCw, Database, Clock } from 'lucide-react'
 import { useStore } from '../store/useStore'
-import { listCounties } from '../api/client'
+import { listCounties, listProjects } from '../api/client'
 import { getCachedCounties } from '../db/parcelCache'
 import { Button, Card, Banner } from '../components/ui'
 
@@ -13,7 +13,9 @@ export default function Dashboard() {
   const online = useStore((s) => s.online)
   const counties = useStore((s) => s.counties)
   const setCounties = useStore((s) => s.setCounties)
+  const setSelectedProjectId = useStore((s) => s.setSelectedProjectId)
   const [cached, setCached] = useState([])
+  const [recent, setRecent] = useState([])
   const [err, setErr] = useState('')
 
   useEffect(() => {
@@ -22,6 +24,7 @@ export default function Dashboard() {
       listCounties()
         .then(setCounties)
         .catch(() => setErr('Could not reach the server — showing cached data.'))
+      listProjects().then((p) => setRecent(p.slice(0, 5))).catch(() => {})
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [online])
@@ -76,10 +79,36 @@ export default function Dashboard() {
       </Card>
 
       <Card>
-        <h3 className="font-semibold text-slate-700 mb-1">Recent Projects</h3>
-        <p className="text-slate-400 text-sm">
-          Project history lands here in Phase 4 (spec §12). Create a mission to begin.
-        </p>
+        <div className="flex items-center justify-between mb-2">
+          <h3 className="font-semibold text-slate-700 inline-flex items-center gap-2">
+            <Clock size={16} /> Recent Projects
+          </h3>
+          <button onClick={() => navigate('/history')} className="text-gas-navy text-sm">
+            View all
+          </button>
+        </div>
+        {recent.length === 0 ? (
+          <p className="text-slate-400 text-sm">No projects yet — create a mission to begin.</p>
+        ) : (
+          <ul className="divide-y divide-slate-100">
+            {recent.map((p) => (
+              <li
+                key={p.id}
+                className="py-2 text-sm cursor-pointer"
+                onClick={() => {
+                  setSelectedProjectId(p.id)
+                  navigate('/annotate')
+                }}
+              >
+                <div className="text-slate-700 truncate">{p.address}</div>
+                <div className="text-xs text-slate-400">
+                  {new Date(p.created_at).toLocaleDateString()} · {p.status}
+                  {p.print_scale ? ` · ${p.print_scale}` : ''}
+                </div>
+              </li>
+            ))}
+          </ul>
+        )}
       </Card>
     </div>
   )

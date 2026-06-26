@@ -10,6 +10,8 @@ import MissionOutput from './screens/MissionOutput'
 import UploadImages from './screens/UploadImages'
 import MapViewer from './screens/MapViewer'
 import PrintExport from './screens/PrintExport'
+import History from './screens/History'
+import Annotate from './screens/Annotate'
 import Settings from './screens/Settings'
 
 // Route guard — redirect to /login when unauthenticated (spec §3.3).
@@ -32,6 +34,8 @@ export default function App() {
       <Route path="/upload" element={<Protected><UploadImages /></Protected>} />
       <Route path="/maps" element={<Protected><MapViewer /></Protected>} />
       <Route path="/print" element={<Protected><PrintExport /></Protected>} />
+      <Route path="/history" element={<Protected><History /></Protected>} />
+      <Route path="/annotate" element={<Protected><Annotate /></Protected>} />
       <Route path="/settings" element={<Protected><Settings /></Protected>} />
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>

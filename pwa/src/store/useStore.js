@@ -35,6 +35,10 @@ export const useStore = create(
       counties: [],
       setCounties: (counties) => set({ counties }),
 
+      // --- currently selected project (history / annotate) ---
+      selectedProjectId: null,
+      setSelectedProjectId: (selectedProjectId) => set({ selectedProjectId }),
+
       // --- offline write queue depth (for the sync badge) ---
       queueDepth: 0,
       setQueueDepth: (queueDepth) => set({ queueDepth })

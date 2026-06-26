@@ -18,6 +18,22 @@ class TokenResponse(BaseModel):
     token_type: str = "bearer"
 
 
+class UserCreateRequest(BaseModel):
+    username: str
+    password: str
+    display_name: Optional[str] = None
+
+
+class UserResponse(BaseModel):
+    id: str
+    username: str
+    display_name: Optional[str] = None
+    is_active: bool
+
+    class Config:
+        from_attributes = True
+
+
 # ---- Counties ----
 class CountyStatus(BaseModel):
     county: str
@@ -102,6 +118,32 @@ class ProjectResponse(BaseModel):
 
     class Config:
         from_attributes = True
+
+
+class ProjectListItem(BaseModel):
+    id: str
+    created_at: dt.datetime
+    address: str
+    county: Optional[str] = None
+    status: str
+    print_scale: Optional[str] = None
+    use_case: str
+    archived: bool = False
+
+    class Config:
+        from_attributes = True
+
+
+class AnnotationCreateRequest(BaseModel):
+    feature_type: str
+    geometry: dict[str, Any]
+    label: str = ""
+    notes: str = ""
+
+
+class AnnotationsResponse(BaseModel):
+    id: str
+    annotations: dict[str, Any]
 
 
 class ProjectStatusResponse(BaseModel):

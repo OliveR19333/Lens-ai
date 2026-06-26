@@ -9,10 +9,29 @@ import datetime as dt
 import enum
 import uuid
 
-from sqlalchemy import JSON, DateTime, Enum, Float, String, Text
+from sqlalchemy import JSON, Boolean, DateTime, Enum, Float, String, Text
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.database import Base
+
+
+def _uuid() -> str:
+    return str(uuid.uuid4())
+
+
+class User(Base):
+    """Application user (spec §12 — multi-user / Devan Teaster access)."""
+
+    __tablename__ = "users"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=_uuid)
+    username: Mapped[str] = mapped_column(String(64), unique=True, index=True)
+    password_hash: Mapped[str] = mapped_column(String(256))
+    display_name: Mapped[str | None] = mapped_column(String(128), nullable=True)
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True)
+    created_at: Mapped[dt.datetime] = mapped_column(
+        DateTime(timezone=True), default=lambda: dt.datetime.now(dt.timezone.utc)
+    )
 
 
 class County(str, enum.Enum):
@@ -33,10 +52,6 @@ class UseCase(str, enum.Enum):
     irrigation = "irrigation"
     hardscape = "hardscape"
     both = "both"
-
-
-def _uuid() -> str:
-    return str(uuid.uuid4())
 
 
 class Project(Base):
@@ -71,9 +86,17 @@ class Project(Base):
     webodm_project_id: Mapped[int | None] = mapped_column(nullable=True)
     webodm_task_id: Mapped[str | None] = mapped_column(String(64), nullable=True)
 
+    # Manual annotation layer (spec §12) — kept separate from AI features so
+    # re-running detection never clobbers operator edits.
+    annotations_geojson: Mapped[dict | None] = mapped_column(JSON, nullable=True)
+
     print_scale: Mapped[str | None] = mapped_column(String(64), nullable=True)
     notes: Mapped[str | None] = mapped_column(Text, nullable=True)
     use_case: Mapped[UseCase] = mapped_column(Enum(UseCase), default=UseCase.both)
+
+    # Project history / archive (spec §12).
+    archived: Mapped[bool] = mapped_column(Boolean, default=False)
+    owner_username: Mapped[str | None] = mapped_column(String(64), nullable=True)
 
 
 class CountyCache(Base):

@@ -4,9 +4,10 @@ import 'maplibre-gl/dist/maplibre-gl.css'
 
 // MapLibre GL preview of a parcel boundary (spec §3.1, §3.3 Parcel Preview).
 // Uses an offline-capable vector style; the boundary is drawn as a fill+line.
-export default function ParcelMap({ geojson, center, height = 300 }) {
+export default function ParcelMap({ geojson, center, height = 300, markers = [], onPick }) {
   const ref = useRef(null)
   const mapRef = useRef(null)
+  const markerObjs = useRef([])
 
   useEffect(() => {
     if (!ref.current) return
@@ -45,9 +46,29 @@ export default function ParcelMap({ geojson, center, height = 300 }) {
       }
     })
 
+    // Tap-to-add support for the annotation layer (spec §12).
+    if (onPick) {
+      map.on('click', (e) => onPick([e.lngLat.lng, e.lngLat.lat]))
+      map.getCanvas().style.cursor = 'crosshair'
+    }
+
     return () => map.remove()
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [geojson])
+
+  // Render annotation markers without recreating the map.
+  useEffect(() => {
+    const map = mapRef.current
+    if (!map) return
+    markerObjs.current.forEach((m) => m.remove())
+    markerObjs.current = (markers || []).map(({ lng, lat, label }) => {
+      const el = document.createElement('div')
+      el.title = label || ''
+      el.style.cssText =
+        'width:14px;height:14px;border-radius:50%;background:#1B3A5C;border:2px solid #fff;box-shadow:0 0 0 1px #1B3A5C'
+      return new maplibregl.Marker({ element: el }).setLngLat([lng, lat]).addTo(map)
+    })
+  }, [markers])
 
   return <div ref={ref} style={{ height }} className="w-full rounded-xl overflow-hidden" />
 }

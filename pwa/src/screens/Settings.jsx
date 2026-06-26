@@ -1,9 +1,15 @@
 import { useEffect, useState } from 'react'
-import { RefreshCw, Upload } from 'lucide-react'
+import { RefreshCw, Upload, UserPlus } from 'lucide-react'
 import { useStore } from '../store/useStore'
-import { listCounties, syncParcels, parcelManifest, downloadCountyBundle } from '../api/client'
+import {
+  listCounties,
+  syncParcels,
+  parcelManifest,
+  downloadCountyBundle,
+  createUser
+} from '../api/client'
 import { getCachedCounties, getCountyBundle, saveCountyBundle } from '../db/parcelCache'
-import { Button, Card, Banner } from '../components/ui'
+import { Button, Card, Banner, Field, TextInput } from '../components/ui'
 
 const COUNTIES = [
   { county: 'blount', county_name: 'Blount County' },
@@ -158,6 +164,51 @@ export default function Settings() {
         <h3 className="font-semibold text-slate-700 mb-1">Account</h3>
         <p className="text-sm text-slate-600">Signed in as {username || 'operator'}.</p>
       </Card>
+
+      <TeamMember online={online} />
     </div>
+  )
+}
+
+// Add a team member (spec §12 — e.g. Devan Teaster access).
+function TeamMember({ online }) {
+  const [u, setU] = useState('')
+  const [p, setP] = useState('')
+  const [name, setName] = useState('')
+  const [msg, setMsg] = useState('')
+  const [busy, setBusy] = useState(false)
+
+  async function onAdd(e) {
+    e.preventDefault()
+    setBusy(true)
+    setMsg('')
+    try {
+      const created = await createUser(u, p, name)
+      setMsg(`Added ${created.username}.`)
+      setU('')
+      setP('')
+      setName('')
+    } catch (err) {
+      setMsg(err?.response?.data?.detail || 'Could not add user.')
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  return (
+    <Card>
+      <h3 className="font-semibold text-slate-700 mb-2 inline-flex items-center gap-2">
+        <UserPlus size={16} /> Add Team Member
+      </h3>
+      <form onSubmit={onAdd}>
+        <Field label="Username"><TextInput value={u} onChange={(e) => setU(e.target.value)} autoCapitalize="none" required /></Field>
+        <Field label="Display name (optional)"><TextInput value={name} onChange={(e) => setName(e.target.value)} /></Field>
+        <Field label="Temporary password"><TextInput type="password" value={p} onChange={(e) => setP(e.target.value)} required /></Field>
+        {msg && <div className="mb-3"><Banner tone="info">{msg}</Banner></div>}
+        <Button type="submit" variant="secondary" disabled={busy || !online || !u || !p}>
+          {busy ? 'Adding…' : 'Add member'}
+        </Button>
+      </form>
+    </Card>
   )
 }

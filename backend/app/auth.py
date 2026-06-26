@@ -15,26 +15,42 @@ from fastapi.security import OAuth2PasswordBearer
 from passlib.context import CryptContext
 
 from app.config import Settings, get_settings
+from app.services.auth_logic import decide_auth
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="auth/login", auto_error=False)
 
 
 def verify_password(plain: str, hashed: str) -> bool:
-    return pwd_context.verify(plain, hashed)
+    try:
+        return pwd_context.verify(plain, hashed)
+    except Exception:
+        return False
 
 
 def hash_password(plain: str) -> str:
     return pwd_context.hash(plain)
 
 
-def authenticate_user(username: str, password: str, settings: Settings) -> bool:
-    """Validate credentials against the bootstrap admin account."""
-    if username != settings.admin_username:
-        return False
-    # Bootstrap account stores the password in settings; compare directly.
-    # (When a user table is added, switch to verify_password against a hash.)
-    return password == settings.admin_password
+def authenticate_user(username: str, password: str, settings: Settings, db=None) -> bool:
+    """Validate credentials against DB users, falling back to the bootstrap admin.
+
+    spec §12: real multi-user accounts live in the ``users`` table; the
+    settings-based admin remains as a bootstrap so a fresh install can log in.
+    """
+    user = None
+    if db is not None:
+        from app.models import User
+
+        user = db.query(User).filter(User.username == username).first()
+    return decide_auth(
+        username,
+        password,
+        user,
+        admin_username=settings.admin_username,
+        admin_password=settings.admin_password,
+        verify=verify_password,
+    )
 
 
 def create_access_token(subject: str, settings: Settings) -> str:

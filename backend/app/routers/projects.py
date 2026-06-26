@@ -10,11 +10,15 @@ from app.auth import get_current_user
 from app.database import get_db
 from app.models import County, Project, ProjectStatus, UseCase
 from app.schemas import (
+    AnnotationCreateRequest,
+    AnnotationsResponse,
     MapsResponse,
     ProjectCreateRequest,
+    ProjectListItem,
     ProjectResponse,
     ProjectStatusResponse,
 )
+from app.services import annotations as ann
 from app.services import feature_detection, webodm
 from app.workers import tasks
 
@@ -25,7 +29,7 @@ router = APIRouter(prefix="/project", tags=["project"])
 def create_project(
     body: ProjectCreateRequest,
     db: Session = Depends(get_db),
-    _user: str = Depends(get_current_user),
+    user: str = Depends(get_current_user),
 ):
     """`POST /project/create` → create a new mapping project."""
     project = Project(
@@ -37,11 +41,104 @@ def create_project(
         parcel_geojson=body.parcel_geojson,
         use_case=UseCase(body.use_case),
         notes=body.notes,
+        owner_username=user,
     )
     db.add(project)
     db.commit()
     db.refresh(project)
     return ProjectResponse.model_validate(project)
+
+
+@router.get("/list", response_model=list[ProjectListItem])
+def list_projects(
+    include_archived: bool = False,
+    db: Session = Depends(get_db),
+    _user: str = Depends(get_current_user),
+):
+    """`GET /project/list` → project history, newest first (spec §12)."""
+    q = db.query(Project)
+    if not include_archived:
+        q = q.filter(Project.archived.is_(False))
+    projects = q.order_by(Project.created_at.desc()).all()
+    return [ProjectListItem.model_validate(p) for p in projects]
+
+
+@router.get("/{project_id}", response_model=ProjectResponse)
+def get_project(
+    project_id: str,
+    db: Session = Depends(get_db),
+    _user: str = Depends(get_current_user),
+):
+    """`GET /project/{id}` → full project detail."""
+    project = db.get(Project, project_id)
+    if not project:
+        raise HTTPException(status_code=404, detail="Project not found")
+    return ProjectResponse.model_validate(project)
+
+
+@router.post("/{project_id}/archive", response_model=ProjectListItem)
+def archive_project(
+    project_id: str,
+    archived: bool = True,
+    db: Session = Depends(get_db),
+    _user: str = Depends(get_current_user),
+):
+    """`POST /project/{id}/archive?archived=true|false` → (un)archive (spec §12)."""
+    project = db.get(Project, project_id)
+    if not project:
+        raise HTTPException(status_code=404, detail="Project not found")
+    project.archived = archived
+    db.commit()
+    db.refresh(project)
+    return ProjectListItem.model_validate(project)
+
+
+@router.get("/{project_id}/annotations", response_model=AnnotationsResponse)
+def get_annotations(
+    project_id: str,
+    db: Session = Depends(get_db),
+    _user: str = Depends(get_current_user),
+):
+    """`GET /project/{id}/annotations` → manual annotation layer (spec §12)."""
+    project = db.get(Project, project_id)
+    if not project:
+        raise HTTPException(status_code=404, detail="Project not found")
+    return AnnotationsResponse(
+        id=project_id, annotations=project.annotations_geojson or ann.empty_collection()
+    )
+
+
+@router.post("/{project_id}/annotations", response_model=AnnotationsResponse)
+def add_annotation(
+    project_id: str,
+    body: AnnotationCreateRequest,
+    db: Session = Depends(get_db),
+    _user: str = Depends(get_current_user),
+):
+    """`POST /project/{id}/annotations` → append a manual feature (spec §12)."""
+    project = db.get(Project, project_id)
+    if not project:
+        raise HTTPException(status_code=404, detail="Project not found")
+    feature = ann.make_annotation(body.feature_type, body.geometry, body.label, body.notes)
+    project.annotations_geojson = ann.append_annotation(project.annotations_geojson, feature)
+    db.commit()
+    return AnnotationsResponse(id=project_id, annotations=project.annotations_geojson)
+
+
+@router.delete("/{project_id}/annotations/{annotation_id}", response_model=AnnotationsResponse)
+def delete_annotation(
+    project_id: str,
+    annotation_id: str,
+    db: Session = Depends(get_db),
+    _user: str = Depends(get_current_user),
+):
+    """`DELETE /project/{id}/annotations/{ann_id}` → remove one annotation."""
+    project = db.get(Project, project_id)
+    if not project:
+        raise HTTPException(status_code=404, detail="Project not found")
+    project.annotations_geojson = ann.remove_annotation(project.annotations_geojson, annotation_id)
+    db.commit()
+    return AnnotationsResponse(id=project_id, annotations=project.annotations_geojson)
 
 
 @router.post("/{project_id}/upload", response_model=ProjectStatusResponse)

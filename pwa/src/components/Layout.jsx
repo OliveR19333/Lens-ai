@@ -1,5 +1,5 @@
 import { NavLink, useNavigate } from 'react-router-dom'
-import { Home, MapPin, Upload, Map, Settings as SettingsIcon, LogOut } from 'lucide-react'
+import { Home, MapPin, Clock, Map, Settings as SettingsIcon, LogOut } from 'lucide-react'
 import { useStore } from '../store/useStore'
 
 function OnlineBadge() {
@@ -20,8 +20,8 @@ function OnlineBadge() {
 const tabs = [
   { to: '/', icon: Home, label: 'Home', end: true },
   { to: '/new', icon: MapPin, label: 'Mission' },
-  { to: '/upload', icon: Upload, label: 'Upload' },
   { to: '/maps', icon: Map, label: 'Maps' },
+  { to: '/history', icon: Clock, label: 'History' },
   { to: '/settings', icon: SettingsIcon, label: 'Settings' }
 ]
 

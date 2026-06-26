@@ -116,20 +116,25 @@ def render_maps(self, project_id: str) -> dict:
         if not project or not project.parcel_geojson:
             return {"project_id": project_id, "status": "error", "error": "no parcel geojson"}
 
+        from app.services.annotations import merge_features
+
         out = project_dir(project_id)
         flat_pdf = out / "map_flat.pdf"
         elev_pdf = out / "map_elev.pdf"
         county = project.county.value if project.county else ""
 
+        # AI-detected features + manual annotations both land on the maps (§9/§12).
+        features = merge_features(project.features_geojson, project.annotations_geojson)
+
         scale = render_flat_map(
             project.parcel_geojson, flat_pdf,
-            ortho_tif=project.ortho_tif, features_geojson=project.features_geojson,
+            ortho_tif=project.ortho_tif, features_geojson=features,
             address=project.address or "", county=county,
         )
         render_elevation_map(
             project.parcel_geojson, elev_pdf,
             dsm_tif=project.dsm_tif, dtm_tif=project.dtm_tif,
-            features_geojson=project.features_geojson, address=project.address or "", county=county,
+            features_geojson=features, address=project.address or "", county=county,
         )
 
         project.map_flat_pdf = str(flat_pdf)

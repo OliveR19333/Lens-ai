@@ -119,7 +119,7 @@ docker compose up -d           # Postgres/PostGIS + Redis + WebODM + backend
 | 1 — MVP | Address → geocode → parcel → KMZ + offline cache | ✅ Implemented (fully offline field flow) |
 | 2 — Processing | WebODM upload, ortho/DEM retrieval, flat map | ✅ **WebODM client + flat map renderer done** |
 | 3 — Elevation & features | Contours, slope arrows, AI detection | ✅ **Done** (AI detection needs a trained YOLO model) |
-| 4 — Polish & scale | More counties, annotation, multi-user | County **sync pipeline done** (URLs to verify) |
+| 4 — Polish & scale | More counties, annotation, multi-user | ✅ **Done** — annotation layer, project history/archive, multi-user login |
 
 ---
 
