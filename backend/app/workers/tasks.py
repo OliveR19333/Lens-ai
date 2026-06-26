@@ -68,11 +68,31 @@ def process_webodm_job(self, project_id: str, image_paths: List[str]) -> dict:
 def detect_features(self, project_id: str) -> dict:
     """Run AI feature detection on a project's orthomosaic (spec §8).
 
-    ⚙ TODO: load Project.ortho_tif/dtm_tif → feature_detection.detect_features
-    → store FeatureCollection on Project.features_geojson.
+    Loads the project's ortho/DTM, runs the detection pipeline, and stores the
+    resulting FeatureCollection on Project.features_geojson so both maps can
+    label the detected ponds/trees/structures/driveways/slope.
     """
-    logger.info("detect_features(%s) — STUB", project_id)
-    return {"project_id": project_id, "status": "stub"}
+    from app.database import SessionLocal
+    from app.models import Project
+    from app.services import feature_detection
+
+    db = SessionLocal()
+    try:
+        project = db.get(Project, project_id)
+        if not project or not project.ortho_tif:
+            return {"project_id": project_id, "status": "skipped", "reason": "no orthomosaic"}
+        try:
+            fc = feature_detection.detect_features(project.ortho_tif, project.dtm_tif)
+        except Exception as exc:  # noqa: BLE001
+            logger.exception("Feature detection failed for %s", project_id)
+            return {"project_id": project_id, "status": "error", "error": str(exc)}
+        project.features_geojson = fc
+        db.commit()
+        n = len(fc.get("features", []))
+        logger.info("detect_features(%s): %d features", project_id, n)
+        return {"project_id": project_id, "status": "complete", "feature_count": n}
+    finally:
+        db.close()
 
 
 @celery_app.task(name="app.workers.tasks.render_maps", bind=True)

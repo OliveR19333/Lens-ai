@@ -30,7 +30,9 @@ app/
 │   │   ├── flat_map.py         Map 1 renderer (matplotlib)     ✅ implemented + tested
 │   │   └── elevation_map.py    Map 2 renderer (matplotlib)     ✅ implemented + tested
 │   ├── webodm.py           WebODM REST client                  ✅ implemented + tested
-│   └── feature_detection.py YOLOv8 + spectral water + slope    ⚙ stub (Phase 3)
+│   ├── feature_detection.py AI detection entry point           ✅ implemented + tested
+│   └── detection/          tiling · geotransform · merge/NMS ·
+│                           spectral water · slope · pipeline    ✅ implemented + tested
 ├── gis/
 │   ├── arcgis.py          ArcGIS REST paginated downloader     ✅ implemented + tested
 │   ├── normalize.py       parcel attribute normalization       ✅ implemented + tested
@@ -72,7 +74,7 @@ python -m pytest tests/ -q
 | County GIS sync (ArcGIS → normalize → gzip bundle) | ✅ implemented* |
 | Map rendering — flat + elevation PDFs (matplotlib) | ✅ implemented + tested |
 | WebODM client — auth → task → poll → ortho/DEM download | ✅ implemented + tested |
-| AI feature detection (YOLOv8 + spectral water) | ⚙ structured stub (clear TODOs) |
+| AI feature detection (tiling → YOLOv8 → NMS → water + slope) | ✅ implemented + tested* |
 
 \* County sync is fully implemented end-to-end; each county's ArcGIS service URL
 must still be **verified and filled in** (`gis/county_sync.py`, spec §5.1) before
@@ -80,5 +82,11 @@ automated download works. Until then, load parcels via the PWA's manual import.
 
 Map rendering works from just a parcel boundary (scaled grid sheet); the
 orthomosaic/hillshade/contour layers activate when WebODM GeoTIFFs + `rasterio`
-are present. Remaining stubs raise `NotImplementedError` with a spec reference,
-or return valid empty results, so the API stays coherent.
+are present.
+
+\* AI feature detection: the full pipeline (tiling, NMS/merge, georeferencing,
+spectral water, slope) is implemented and unit-tested. The YOLOv8 object-
+detection stage needs a **trained aerial model** (`YOLO_MODEL_PATH`, spec
+§14.3 — pick one from Roboflow Universe); without it, spectral water + slope
+still run and detection degrades gracefully to an empty/partial collection
+rather than failing.
