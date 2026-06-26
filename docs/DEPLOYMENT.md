@@ -43,7 +43,20 @@ TLS certificate automatically — which is what lets iOS install the PWA.
 
 ## B. Deploy the stack
 
-On the server, with Docker installed:
+### Easiest — one-paste bootstrap
+
+On a fresh Ubuntu server (Hetzner CPX41, Ashburn), as root:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/OliveR19333/Lens-ai/claude/new-session-hzjb8c/infra/bootstrap.sh | bash
+```
+
+It installs Docker, fetches the code, asks for your **domain** and **admin
+password** (and generates the rest), brings the whole stack up with automatic
+HTTPS, and initializes the database. Then point DNS at the server and open the
+domain.
+
+### Or manually
 
 ```bash
 git clone https://github.com/OliveR19333/Lens-ai.git && cd Lens-ai
