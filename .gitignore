@@ -35,6 +35,11 @@ data/tiles/
 *.pdf
 !docs/**/*.pdf
 
+# ---- ML model weights (large; fetched per-deploy) ----
+*.pt
+*.onnx
+*.engine
+
 # ---- OS / editor ----
 .DS_Store
 Thumbs.db

@@ -1,0 +1,27 @@
+# Caddy reverse proxy — automatic HTTPS + PWA hosting (spec §13.3).
+#
+# Serves the built PWA and proxies API calls under /api to the FastAPI backend,
+# all on ONE domain. Caddy obtains and renews a Let's Encrypt certificate
+# automatically when DOMAIN is a real hostname (HTTPS is what lets iOS install
+# the PWA to the home screen). For local testing, DOMAIN defaults to localhost
+# (served over http).
+#
+# DOMAIN is provided by docker-compose.prod.yml.
+
+{$DOMAIN:localhost} {
+	encode gzip zstd
+
+	# Backend API — Caddy strips the /api prefix before proxying, so the
+	# FastAPI routes (/auth, /geocode, /project, ...) stay unchanged.
+	handle_path /api/* {
+		reverse_proxy backend:8080
+	}
+
+	# PWA static files + SPA fallback so client-side routes (/new, /history…)
+	# resolve to the app shell.
+	handle {
+		root * /srv/pwa
+		try_files {path} /index.html
+		file_server
+	}
+}
