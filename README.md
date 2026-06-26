@@ -55,6 +55,10 @@ Legend: ✅ implemented & tested · ⚙ scaffolded stub (TODO).
 
 ## Quick start
 
+> 🚀 **Running it for real on a Mac?** Follow [`docs/FIRST_RUN.md`](docs/FIRST_RUN.md)
+> — Docker up, create the DB, log in, and install on your iPhone.
+
+
 ### Backend (FastAPI)
 
 ```bash
