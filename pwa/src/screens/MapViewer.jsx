@@ -37,20 +37,18 @@ export default function MapViewer() {
       })
       setProjectId(project.id)
       await renderMaps(project.id)
-      // Poll until both PDFs are ready.
-      for (let i = 0; i < 20; i++) {
+      // Poll until both PDFs are ready (local flag — `ready` state is stale here).
+      let done = false
+      for (let i = 0; i < 20 && !done; i++) {
         const maps = await projectMaps(project.id)
         if (maps.ready) {
+          done = true
           setReady(true)
           break
         }
         await new Promise((r) => setTimeout(r, 1500))
       }
-      if (!ready) {
-        const maps = await projectMaps(project.id)
-        setReady(maps.ready)
-        if (!maps.ready) setErr('Rendering is taking longer than expected — try Download shortly.')
-      }
+      if (!done) setErr('Rendering is taking longer than expected — try again shortly.')
     } catch (e) {
       setErr(e?.response?.data?.detail || 'Map generation failed (needs the server on WiFi).')
     } finally {

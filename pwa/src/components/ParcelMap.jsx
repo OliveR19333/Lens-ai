@@ -8,6 +8,10 @@ export default function ParcelMap({ geojson, center, height = 300, markers = [],
   const ref = useRef(null)
   const mapRef = useRef(null)
   const markerObjs = useRef([])
+  // Keep the latest onPick so the (once-registered) click handler never calls a
+  // stale closure — otherwise the marker-type selector would be ignored.
+  const onPickRef = useRef(onPick)
+  onPickRef.current = onPick
 
   useEffect(() => {
     if (!ref.current) return
@@ -46,9 +50,10 @@ export default function ParcelMap({ geojson, center, height = 300, markers = [],
       }
     })
 
-    // Tap-to-add support for the annotation layer (spec §12).
-    if (onPick) {
-      map.on('click', (e) => onPick([e.lngLat.lng, e.lngLat.lat]))
+    // Tap-to-add support for the annotation layer (spec §12). The handler reads
+    // the current onPick via a ref so the live marker-type selection is used.
+    if (onPickRef.current) {
+      map.on('click', (e) => onPickRef.current?.([e.lngLat.lng, e.lngLat.lat]))
       map.getCanvas().style.cursor = 'crosshair'
     }
 

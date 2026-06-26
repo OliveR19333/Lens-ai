@@ -7,7 +7,6 @@ from __future__ import annotations
 from functools import lru_cache
 from typing import List
 
-from pydantic import Field, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -21,7 +20,10 @@ class Settings(BaseSettings):
     env: str = "development"
     api_host: str = "0.0.0.0"
     api_port: int = 8080
-    cors_origins: List[str] = Field(default_factory=lambda: ["http://localhost:5173"])
+    # Stored as a comma-separated string: pydantic-settings tries to JSON-decode
+    # env values for List fields *before* validators run, which would crash on a
+    # plain comma list. Read via `cors_origins_list`.
+    cors_origins: str = "http://localhost:5173"
 
     # Auth
     jwt_secret: str = "change-me-in-production"
@@ -60,12 +62,9 @@ class Settings(BaseSettings):
     storage_dir: str = "./storage"
     data_dir: str = "./data"
 
-    @field_validator("cors_origins", mode="before")
-    @classmethod
-    def _split_origins(cls, v):
-        if isinstance(v, str):
-            return [o.strip() for o in v.split(",") if o.strip()]
-        return v
+    @property
+    def cors_origins_list(self) -> List[str]:
+        return [o.strip() for o in self.cors_origins.split(",") if o.strip()]
 
 
 @lru_cache

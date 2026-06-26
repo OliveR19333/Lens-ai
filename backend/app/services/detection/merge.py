@@ -89,7 +89,14 @@ def detections_to_features(
 ) -> List[dict]:
     """Filter + NMS + georeference detections into spec §11.2 features."""
     eligible = [d for d in dets if d.score >= min_confidence and map_class(d.cls_name, class_map)]
-    kept = non_max_suppression(eligible, iou_thresh=iou_thresh)
+    # NMS within each feature type, so an overlapping driveway + structure don't
+    # suppress each other.
+    by_type: Dict[str, List[Detection]] = {}
+    for d in eligible:
+        by_type.setdefault(map_class(d.cls_name, class_map), []).append(d)
+    kept: List[Detection] = []
+    for group in by_type.values():
+        kept.extend(non_max_suppression(group, iou_thresh=iou_thresh))
     features: List[dict] = []
     for d in kept:
         ftype = map_class(d.cls_name, class_map)
