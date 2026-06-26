@@ -1,7 +1,9 @@
 """Project lifecycle + processing endpoints (spec §4.2, §7, §8, §9)."""
+from pathlib import Path
 from typing import List
 
 from fastapi import APIRouter, Depends, File, HTTPException, UploadFile, status
+from fastapi.responses import FileResponse
 from sqlalchemy.orm import Session
 
 from app.auth import get_current_user
@@ -113,6 +115,29 @@ def trigger_features(
     )
 
 
+@router.post("/{project_id}/maps/render", response_model=ProjectStatusResponse)
+def render_project_maps(
+    project_id: str,
+    db: Session = Depends(get_db),
+    _user: str = Depends(get_current_user),
+):
+    """`POST /project/{id}/maps/render` → queue Map 1 + Map 2 rendering (spec §9).
+
+    Works with just the parcel boundary (renders scaled grid sheets); richer
+    output appears once WebODM ortho/DEM and AI features are attached.
+    """
+    project = db.get(Project, project_id)
+    if not project:
+        raise HTTPException(status_code=404, detail="Project not found")
+    if not project.parcel_geojson:
+        raise HTTPException(status_code=409, detail="Project has no parcel boundary.")
+    task = tasks.render_maps.delay(project_id)
+    return ProjectStatusResponse(
+        id=project_id, status=project.status.value, webodm_task_id=task.id,
+        message="Map rendering queued.",
+    )
+
+
 @router.get("/{project_id}/maps", response_model=MapsResponse)
 def project_maps(
     project_id: str,
@@ -131,3 +156,20 @@ def project_maps(
         print_scale=project.print_scale,
         ready=ready,
     )
+
+
+@router.get("/{project_id}/maps/{kind}.pdf")
+def download_map_pdf(
+    project_id: str,
+    kind: str,
+    db: Session = Depends(get_db),
+    _user: str = Depends(get_current_user),
+):
+    """`GET /project/{id}/maps/{flat|elev}.pdf` → the rendered PDF (spec §9)."""
+    project = db.get(Project, project_id)
+    if not project:
+        raise HTTPException(status_code=404, detail="Project not found")
+    path = {"flat": project.map_flat_pdf, "elev": project.map_elev_pdf}.get(kind)
+    if not path or not Path(path).exists():
+        raise HTTPException(status_code=404, detail=f"{kind} map not rendered yet.")
+    return FileResponse(path, media_type="application/pdf", filename=f"{kind}-map-{project_id}.pdf")

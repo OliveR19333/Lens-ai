@@ -43,11 +43,48 @@ def detect_features(self, project_id: str) -> dict:
 def render_maps(self, project_id: str) -> dict:
     """Render Map 1 (flat) and Map 2 (elevation) PDFs (spec §9).
 
-    ⚙ TODO: flat_map.render_flat_map + elevation_map.render_elevation_map →
-    persist Project.map_flat_pdf/map_elev_pdf + print_scale → status=complete.
+    Renders from the project's parcel boundary + any available ortho/DEM +
+    detected features, persists the PDF paths and locked print scale, and marks
+    the project complete. Works with parcel-only data (no drone imagery yet):
+    the maps render as scaled grid sheets.
     """
-    logger.info("render_maps(%s) — STUB", project_id)
-    return {"project_id": project_id, "status": "stub"}
+    from app.database import SessionLocal
+    from app.models import Project, ProjectStatus
+    from app.services.maps.flat_map import render_flat_map
+    from app.services.maps.elevation_map import render_elevation_map
+    from app.storage import project_dir
+
+    db = SessionLocal()
+    try:
+        project = db.get(Project, project_id)
+        if not project or not project.parcel_geojson:
+            return {"project_id": project_id, "status": "error", "error": "no parcel geojson"}
+
+        out = project_dir(project_id)
+        flat_pdf = out / "map_flat.pdf"
+        elev_pdf = out / "map_elev.pdf"
+        county = project.county.value if project.county else ""
+
+        scale = render_flat_map(
+            project.parcel_geojson, flat_pdf,
+            ortho_tif=project.ortho_tif, features_geojson=project.features_geojson,
+            address=project.address or "", county=county,
+        )
+        render_elevation_map(
+            project.parcel_geojson, elev_pdf,
+            dsm_tif=project.dsm_tif, dtm_tif=project.dtm_tif,
+            features_geojson=project.features_geojson, address=project.address or "", county=county,
+        )
+
+        project.map_flat_pdf = str(flat_pdf)
+        project.map_elev_pdf = str(elev_pdf)
+        project.print_scale = scale.label
+        project.status = ProjectStatus.complete
+        db.commit()
+        logger.info("render_maps(%s) complete — %s", project_id, scale.label)
+        return {"project_id": project_id, "status": "complete", "print_scale": scale.label}
+    finally:
+        db.close()
 
 
 @celery_app.task(name="app.workers.tasks.sync_all_counties", bind=True)
@@ -56,10 +93,7 @@ def sync_all_counties(self) -> dict:
     results = {}
     for key in COUNTY_SOURCES:
         try:
-            results[key] = county_sync.sync_county(key)
-        except NotImplementedError as exc:
-            logger.warning("County %s sync pending: %s", key, exc)
-            results[key] = {"status": "not_implemented"}
+            results[key] = county_sync.sync_county(key).as_dict()
         except Exception as exc:  # keep going on per-county failure
             logger.exception("County %s sync failed", key)
             results[key] = {"status": "error", "error": str(exc)}

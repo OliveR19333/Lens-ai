@@ -1,19 +1,29 @@
-"""County GIS download → PostGIS → PWA bundle (spec §5.2).
+"""County GIS sync orchestration (spec §5.2).
 
-⚙ STUB — Phase 1/4. The per-county portal metadata and the sync steps are laid
-out; the shapefile download + ``pyogrio``/``geopandas`` conversion + PostGIS
-load + bundle packaging are left as TODO.
+Pipeline per county:
+  1. download the parcel layer from its ArcGIS REST service (paginated GeoJSON)
+  2. normalize attributes to our parcel schema
+  3. package a gzip bundle for the PWA + compute a version hash
+  4. (optional) load into PostGIS for server-side point-in-polygon lookup
+  5. update the CountyCache row
 
-> ⚑ NOTE (spec §5.1): each county GIS portal must be manually verified at build
-> time. Some require free account registration for bulk shapefile download.
-> Confirm current download URLs and formats before implementation.
+Steps 1-3 + 5 are fully implemented and dependency-light. Step 4 (PostGIS load)
+is optional and only runs when geopandas + a database are available; the PWA
+bundle is the field-facing artifact and does not require it.
+
+> ⚑ NOTE (spec §5.1): the per-county service URLs below MUST be verified at
+> build time — some portals change endpoints or require registration. Each is
+> marked `verified=False` until confirmed against the live portal.
 """
 from __future__ import annotations
 
-import hashlib
 import logging
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
+from typing import Optional
+
+from app.config import get_settings
+from app.gis import arcgis, bundle, normalize
 
 logger = logging.getLogger("gas.gis.sync")
 
@@ -24,50 +34,142 @@ class CountySource:
     name: str
     portal_url: str
     export_format: str
-    # Direct bulk-download URL — TODO: verify per spec §5.1 before use.
-    download_url: str | None = None
+    # ArcGIS REST FeatureServer/MapServer parcel layer query endpoint.
+    # TODO(spec §5.1): verify each before production use.
+    service_url: Optional[str] = None
+    verified: bool = False
 
 
 COUNTY_SOURCES = {
     "blount": CountySource(
         "blount", "Blount County, TN",
         "https://www.blounttn.org/2153/GIS-Mapping", "Shapefile / KML",
+        service_url=None, verified=False,
     ),
     "knox": CountySource(
         "knox", "Knox County, TN",
         "https://www.knoxplanning.org/gis/", "Shapefile / GeoJSON",
+        # Knox/KGIS publishes parcels via ArcGIS REST; confirm the exact layer.
+        service_url=None, verified=False,
     ),
     "sevier": CountySource(
         "sevier", "Sevier County, TN",
         "https://www.seviercountytn.org/gis/", "Shapefile / KML",
+        service_url=None, verified=False,
     ),
 }
 
 
+@dataclass
+class SyncOutcome:
+    county: str
+    status: str  # "synced" | "no_source" | "error"
+    parcel_count: int = 0
+    version_hash: Optional[str] = None
+    gzip_bytes: int = 0
+    error: Optional[str] = None
+
+    def as_dict(self) -> dict:
+        return {
+            "county": self.county,
+            "status": self.status,
+            "parcel_count": self.parcel_count,
+            "version_hash": self.version_hash,
+            "gzip_bytes": self.gzip_bytes,
+            "error": self.error,
+        }
+
+
+def sync_county(county_key: str, *, fetch=arcgis._default_fetch) -> SyncOutcome:
+    """Run the full sync for one county. ``fetch`` is injectable for testing."""
+    source = COUNTY_SOURCES.get(county_key)
+    if not source:
+        raise ValueError(f"Unknown county: {county_key!r}")
+
+    if not source.service_url:
+        logger.warning(
+            "County %s has no verified GIS service URL yet (spec §5.1) — "
+            "skipping automated download. Use Settings → Import in the PWA, "
+            "or set COUNTY_SOURCES['%s'].service_url.",
+            county_key, county_key,
+        )
+        return SyncOutcome(county=county_key, status="no_source")
+
+    settings = get_settings()
+    try:
+        raw_fc = arcgis.fetch_layer_geojson(source.service_url, fetch=fetch)
+        norm_fc = normalize.normalize_collection(raw_fc, county_key)
+        result = bundle.package_bundle(county_key, norm_fc, data_dir=settings.data_dir)
+
+        # Optional PostGIS load for server-side parcel lookup.
+        try:
+            _load_postgis(county_key, norm_fc)
+        except Exception as exc:  # noqa: BLE001 — PostGIS is optional here
+            logger.info("PostGIS load skipped for %s: %s", county_key, exc)
+
+        _update_county_cache(county_key, result)
+        logger.info(
+            "Synced %s: %d parcels, %d KB gzip (v%s)",
+            county_key, result.parcel_count, result.gzip_bytes // 1024, result.version_hash,
+        )
+        return SyncOutcome(
+            county=county_key,
+            status="synced",
+            parcel_count=result.parcel_count,
+            version_hash=result.version_hash,
+            gzip_bytes=result.gzip_bytes,
+        )
+    except Exception as exc:  # noqa: BLE001
+        logger.exception("Sync failed for %s", county_key)
+        return SyncOutcome(county=county_key, status="error", error=str(exc))
+
+
+def _load_postgis(county_key: str, fc: dict) -> None:
+    """Load parcels into the per-county PostGIS table (spec §5.3). Optional."""
+    import geopandas as gpd  # heavy import, kept local
+    from sqlalchemy import text
+
+    from app.database import engine
+
+    gdf = gpd.GeoDataFrame.from_features(fc["features"], crs="EPSG:4326")
+    table = f"parcels_{county_key}"
+    gdf.to_postgis(table, engine, if_exists="replace", index=False)
+    with engine.begin() as conn:
+        conn.execute(text(f"CREATE INDEX IF NOT EXISTS idx_{table}_geom ON {table} USING GIST (geometry)"))
+
+
+def _update_county_cache(county_key: str, result: "bundle.BundleResult") -> None:
+    """Upsert the CountyCache row (best-effort; skipped if DB unavailable)."""
+    import datetime as dt
+
+    try:
+        from app.database import SessionLocal
+        from app.models import CountyCache, County
+
+        db = SessionLocal()
+        try:
+            row = db.get(CountyCache, County(county_key))
+            if row is None:
+                row = CountyCache(county=County(county_key))
+                db.add(row)
+            row.version_hash = result.version_hash
+            row.parcel_count = result.parcel_count
+            row.bundle_path = str(result.path) if result.path else None
+            row.bundle_size_bytes = result.gzip_bytes
+            row.last_synced_at = dt.datetime.now(dt.timezone.utc)
+            db.commit()
+        finally:
+            db.close()
+    except Exception as exc:  # noqa: BLE001
+        logger.info("CountyCache update skipped for %s: %s", county_key, exc)
+
+
 def file_version_hash(path: Path) -> str:
-    """Stable content hash used to tell the PWA when a bundle changed (spec §5.2)."""
+    """Stable content hash of a file (kept for compatibility / external bundles)."""
+    import hashlib
+
     h = hashlib.sha256()
     with open(path, "rb") as f:
         for chunk in iter(lambda: f.read(8192), b""):
             h.update(chunk)
     return h.hexdigest()[:16]
-
-
-def sync_county(county_key: str) -> dict:
-    """Download, convert, load, and package one county's parcels (spec §5.2).
-
-    ⚙ TODO:
-        1. download latest shapefile/GeoJSON from source.download_url
-        2. convert shapefile → GeoJSON via pyogrio/geopandas if needed
-        3. load into PostGIS table parcels_{county} (EPSG:4326)
-        4. package compressed per-county GeoJSON bundle (~10–30MB) for the PWA
-        5. compute version hash + update CountyCache row
-    """
-    source = COUNTY_SOURCES.get(county_key)
-    if not source:
-        raise ValueError(f"Unknown county: {county_key!r}")
-    logger.info("sync_county(%s) STUB — portal %s", county_key, source.portal_url)
-    raise NotImplementedError(
-        f"County sync for {source.name} not implemented (spec §5.2). "
-        "Verify the bulk download URL/format first (spec §5.1)."
-    )

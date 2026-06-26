@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react'
 import { RefreshCw, Upload } from 'lucide-react'
 import { useStore } from '../store/useStore'
-import { listCounties, syncParcels } from '../api/client'
-import { getCachedCounties, saveCountyBundle } from '../db/parcelCache'
+import { listCounties, syncParcels, parcelManifest, downloadCountyBundle } from '../api/client'
+import { getCachedCounties, getCountyBundle, saveCountyBundle } from '../db/parcelCache'
 import { Button, Card, Banner } from '../components/ui'
 
 const COUNTIES = [
@@ -41,14 +41,32 @@ export default function Settings() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [online])
 
+  // Pull updated county bundles from the server into IndexedDB (spec §5.2).
+  // Only downloads counties whose server version differs from what's cached.
   async function onSync() {
     setBusy(true)
     setMsg('')
     try {
-      const res = await syncParcels()
-      setMsg(res.message || 'Parcel sync started.')
+      const { counties: manifest } = await parcelManifest()
+      const available = manifest.filter((c) => c.available)
+      if (available.length === 0) {
+        // Nothing packaged yet — kick the server-side refresh job.
+        const res = await syncParcels()
+        setMsg(res.message || 'No bundles ready yet — asked the server to build them. Try again shortly.')
+        return
+      }
+      let updated = 0
+      for (const c of available) {
+        const local = await getCountyBundle(c.county)
+        if (local?.versionHash === c.version_hash) continue
+        const { geojson, version } = await downloadCountyBundle(c.county)
+        await saveCountyBundle(c.county, version || c.version_hash, geojson)
+        updated++
+      }
+      await refreshCache()
+      setMsg(updated ? `Downloaded ${updated} county bundle(s) — available offline.` : 'Already up to date.')
     } catch {
-      setMsg('Could not start server sync — use manual import below to work offline now.')
+      setMsg('Could not reach the server — use manual import below to work offline now.')
     } finally {
       setBusy(false)
     }

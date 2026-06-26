@@ -116,10 +116,10 @@ docker compose up -d           # Postgres/PostGIS + Redis + WebODM + backend
 
 | Phase | Focus | Status in this scaffold |
 |-------|-------|-------------------------|
-| 1 — MVP | Address → geocode → parcel → KMZ + offline cache | Core logic implemented |
-| 2 — Processing | WebODM upload, ortho/DEM retrieval, flat map | Stubbed |
-| 3 — Elevation & features | Contours, slope arrows, AI detection | Stubbed |
-| 4 — Polish & scale | More counties, annotation, multi-user | Planned |
+| 1 — MVP | Address → geocode → parcel → KMZ + offline cache | ✅ Implemented (fully offline field flow) |
+| 2 — Processing | WebODM upload, ortho/DEM retrieval, flat map | Flat **map renderer done**; WebODM client stubbed |
+| 3 — Elevation & features | Contours, slope arrows, AI detection | Elevation **map renderer done**; AI detection stubbed |
+| 4 — Polish & scale | More counties, annotation, multi-user | County **sync pipeline done** (URLs to verify) |
 
 ---
 

@@ -25,11 +25,17 @@ app/
 │   │   └── kmz_builder.py      assemble the .kmz archive
 │   ├── maps/
 │   │   ├── scale.py            print-scale calculation        ✅ implemented + tested
-│   │   ├── flat_map.py         Map 1 renderer                  ⚙ stub (Phase 2)
-│   │   └── elevation_map.py    Map 2 renderer                  ⚙ stub (Phase 3)
+│   │   ├── layout.py           page-layout math               ✅ implemented + tested
+│   │   ├── render_common.py    shared cartographic drawing    ✅ implemented
+│   │   ├── flat_map.py         Map 1 renderer (matplotlib)     ✅ implemented + tested
+│   │   └── elevation_map.py    Map 2 renderer (matplotlib)     ✅ implemented + tested
 │   ├── webodm.py           WebODM REST client                  ⚙ stub (Phase 2)
 │   └── feature_detection.py YOLOv8 + spectral water + slope    ⚙ stub (Phase 3)
-├── gis/county_sync.py     County GIS download → PostGIS         ⚙ stub
+├── gis/
+│   ├── arcgis.py          ArcGIS REST paginated downloader     ✅ implemented + tested
+│   ├── normalize.py       parcel attribute normalization       ✅ implemented + tested
+│   ├── bundle.py          gzip bundle + version hash           ✅ implemented + tested
+│   └── county_sync.py     orchestration (download→bundle)       ✅ implemented*
 └── workers/               Celery app + tasks (monthly sync)     ⚙ stub orchestration
 ```
 
@@ -63,7 +69,15 @@ python -m pytest tests/ -q
 | DJI WPML 2.0 KMZ mission builder | ✅ implemented + tested |
 | Flight-grid + print-scale math | ✅ implemented + tested |
 | PostGIS parcel lookup SQL | ✅ implemented (needs synced data) |
-| WebODM client, AI detection, map render, GIS sync | ⚙ structured stubs (clear TODOs) |
+| County GIS sync (ArcGIS → normalize → gzip bundle) | ✅ implemented* |
+| Map rendering — flat + elevation PDFs (matplotlib) | ✅ implemented + tested |
+| WebODM client, AI feature detection | ⚙ structured stubs (clear TODOs) |
 
-Stubs raise `NotImplementedError` with a spec reference, or return valid empty
-results, so the API stays coherent while Phases 2–3 are filled in.
+\* County sync is fully implemented end-to-end; each county's ArcGIS service URL
+must still be **verified and filled in** (`gis/county_sync.py`, spec §5.1) before
+automated download works. Until then, load parcels via the PWA's manual import.
+
+Map rendering works from just a parcel boundary (scaled grid sheet); the
+orthomosaic/hillshade/contour layers activate when WebODM GeoTIFFs + `rasterio`
+are present. Remaining stubs raise `NotImplementedError` with a spec reference,
+or return valid empty results, so the API stays coherent.

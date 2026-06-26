@@ -93,6 +93,17 @@ export async function projectMaps(projectId) {
   return data
 }
 
+export async function renderMaps(projectId) {
+  const { data } = await api.post(`/project/${projectId}/maps/render`)
+  return data
+}
+
+// Fetch a rendered map PDF as a blob (sends the JWT, then download/share).
+export async function downloadMapBlob(projectId, kind) {
+  const res = await api.get(`/project/${projectId}/maps/${kind}.pdf`, { responseType: 'blob' })
+  return res.data
+}
+
 export async function triggerFeatures(projectId) {
   const { data } = await api.post(`/project/${projectId}/features`)
   return data
@@ -101,4 +112,18 @@ export async function triggerFeatures(projectId) {
 export async function syncParcels() {
   const { data } = await api.get('/sync/parcels')
   return data
+}
+
+// Per-county bundle versions/sizes available on the server (spec §5.2).
+export async function parcelManifest() {
+  const { data } = await api.get('/sync/parcels/manifest')
+  return data // { counties: [{ county, version_hash, available, gzip_bytes }] }
+}
+
+// Download a county GeoJSON bundle. The browser transparently gunzips it
+// (Content-Encoding: gzip), so we get plain GeoJSON back. Version comes via the
+// X-Parcel-Version header.
+export async function downloadCountyBundle(county) {
+  const res = await api.get(`/sync/parcels/${county}/bundle`, { responseType: 'json' })
+  return { geojson: res.data, version: res.headers['x-parcel-version'] || '' }
 }
