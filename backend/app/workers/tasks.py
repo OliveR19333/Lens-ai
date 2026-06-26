@@ -21,11 +21,47 @@ logger = logging.getLogger("gas.tasks")
 def process_webodm_job(self, project_id: str, image_paths: List[str]) -> dict:
     """Drive a WebODM job end-to-end (spec §7.2), then fetch ortho + DEM.
 
-    ⚙ TODO: authenticate → create project → submit task → poll until COMPLETED
-    → download orthophoto/dsm/dtm → persist paths on Project → set status.
+    auth → create project → submit task → poll until COMPLETED → download
+    orthophoto/dsm/dtm → persist paths on Project → trigger feature detection
+    and map rendering.
     """
-    logger.info("process_webodm_job(%s) — %d images — STUB", project_id, len(image_paths))
-    return {"project_id": project_id, "images": len(image_paths), "status": "stub"}
+    from pathlib import Path
+
+    from app.database import SessionLocal
+    from app.models import Project, ProjectStatus
+    from app.services.webodm import WebODMClient, WebODMError
+    from app.storage import project_dir
+
+    db = SessionLocal()
+    try:
+        project = db.get(Project, project_id)
+        if not project:
+            return {"project_id": project_id, "status": "error", "error": "project not found"}
+        project.status = ProjectStatus.processing
+        db.commit()
+
+        client = WebODMClient()
+        dest = project_dir(project_id) / "webodm"
+        try:
+            outputs = client.run_pipeline(f"GAS_{project_id}", image_paths, Path(dest))
+        except WebODMError as exc:
+            logger.exception("WebODM pipeline failed for %s", project_id)
+            return {"project_id": project_id, "status": "error", "error": str(exc)}
+
+        project.ortho_tif = outputs.get("ortho.tif")
+        project.dsm_tif = outputs.get("dsm.tif")
+        project.dtm_tif = outputs.get("dtm.tif")
+        project.webodm_project_id = int(outputs["_webodm_project_id"])
+        project.webodm_task_id = outputs["_webodm_task_id"]
+        db.commit()
+        logger.info("WebODM done for %s: %s", project_id, list(outputs))
+
+        # Chain: AI features (best-effort) → render maps from the real ortho/DEM.
+        detect_features.delay(project_id)
+        render_maps.delay(project_id)
+        return {"project_id": project_id, "status": "processed", "assets": list(outputs)}
+    finally:
+        db.close()
 
 
 @celery_app.task(name="app.workers.tasks.detect_features", bind=True)

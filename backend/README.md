@@ -29,7 +29,7 @@ app/
 │   │   ├── render_common.py    shared cartographic drawing    ✅ implemented
 │   │   ├── flat_map.py         Map 1 renderer (matplotlib)     ✅ implemented + tested
 │   │   └── elevation_map.py    Map 2 renderer (matplotlib)     ✅ implemented + tested
-│   ├── webodm.py           WebODM REST client                  ⚙ stub (Phase 2)
+│   ├── webodm.py           WebODM REST client                  ✅ implemented + tested
 │   └── feature_detection.py YOLOv8 + spectral water + slope    ⚙ stub (Phase 3)
 ├── gis/
 │   ├── arcgis.py          ArcGIS REST paginated downloader     ✅ implemented + tested
@@ -71,7 +71,8 @@ python -m pytest tests/ -q
 | PostGIS parcel lookup SQL | ✅ implemented (needs synced data) |
 | County GIS sync (ArcGIS → normalize → gzip bundle) | ✅ implemented* |
 | Map rendering — flat + elevation PDFs (matplotlib) | ✅ implemented + tested |
-| WebODM client, AI feature detection | ⚙ structured stubs (clear TODOs) |
+| WebODM client — auth → task → poll → ortho/DEM download | ✅ implemented + tested |
+| AI feature detection (YOLOv8 + spectral water) | ⚙ structured stub (clear TODOs) |
 
 \* County sync is fully implemented end-to-end; each county's ArcGIS service URL
 must still be **verified and filled in** (`gis/county_sync.py`, spec §5.1) before
