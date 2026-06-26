@@ -15,7 +15,7 @@ FIELD_ALIASES = {
     "owner": ["owner", "OWNER", "OWNERNAME", "OwnerName", "OWNER_NAME", "Owner1", "DEEDED_OWN"],
     "address": [
         "address", "ADDRESS", "SITEADDR", "SITE_ADDR", "PropAddr", "PROP_ADDR",
-        "SITUS", "SITUS_ADDR", "LOCATION",
+        "PAR_ADDR", "ADDR", "SITUS", "SITUS_ADDR", "LOCATION",
     ],
 }
 

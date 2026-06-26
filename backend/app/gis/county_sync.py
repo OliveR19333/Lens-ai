@@ -35,27 +35,60 @@ class CountySource:
     portal_url: str
     export_format: str
     # ArcGIS REST FeatureServer/MapServer parcel layer query endpoint.
-    # TODO(spec §5.1): verify each before production use.
     service_url: Optional[str] = None
+    # Optional server-side filter (e.g. county name on a statewide layer).
+    where_clause: str = "1=1"
     verified: bool = False
+    source_note: str = ""
 
+
+# Recommended authoritative source: the Tennessee Comptroller statewide parcel
+# dataset, served via TNMap (STS GIS). It covers all 95 counties, updates
+# monthly around the 1st business day (matches our sync cadence, spec §5.2), and
+# is explicitly published for public/government download — unlike some county
+# servers (e.g. Blount/KCS) whose terms PROHIBIT bulk/automated retrieval.
+#
+#   Portal:    https://tn-tnmap.opendata.arcgis.com/   (download by county)
+#   REST root: https://tnmap.tn.gov/arcgis/rest/services/
+#   Comptroller: https://comptroller.tn.gov/office-functions/pa/gisredistricting/
+#                redistricting-and-land-use-maps/parcel-data.html
+#
+# ⚑ NOTE: the exact statewide parcels layer path + county field name still need
+# to be confirmed against the live REST directory (the build sandbox could not
+# reach these hosts). Set `service_url` + `where_clause` below once confirmed,
+# then flip `verified=True`. See docs/GIS_DATA_SOURCES.md for the full findings.
+STATEWIDE_PARCELS_REST_ROOT = "https://tnmap.tn.gov/arcgis/rest/services/"
 
 COUNTY_SOURCES = {
     "blount": CountySource(
         "blount", "Blount County, TN",
-        "https://www.blounttn.org/2153/GIS-Mapping", "Shapefile / KML",
-        service_url=None, verified=False,
+        "https://tn-tnmap.opendata.arcgis.com/", "Shapefile / GeoJSON",
+        service_url=None,                 # statewide layer URL — confirm (see note)
+        where_clause="UPPER(CONAME)='BLOUNT'",
+        verified=False,
+        source_note=(
+            "Prefer the TN statewide Comptroller layer. The Blount/KCS county "
+            "server prohibits automated bulk retrieval."
+        ),
     ),
     "knox": CountySource(
         "knox", "Knox County, TN",
         "https://www.knoxplanning.org/gis/", "Shapefile / GeoJSON",
-        # Knox/KGIS publishes parcels via ArcGIS REST; confirm the exact layer.
-        service_url=None, verified=False,
+        # Knox/KGIS publishes parcels via ArcGIS REST at
+        # https://www.kgis.org/gisserver/rest/services/ — confirm the parcels
+        # MapServer/FeatureServer layer id. Statewide layer also covers Knox.
+        service_url=None,
+        where_clause="UPPER(CONAME)='KNOX'",
+        verified=False,
+        source_note="KGIS ArcGIS REST, or the TN statewide layer filtered to Knox.",
     ),
     "sevier": CountySource(
         "sevier", "Sevier County, TN",
-        "https://www.seviercountytn.org/gis/", "Shapefile / KML",
-        service_url=None, verified=False,
+        "https://tn-tnmap.opendata.arcgis.com/", "Shapefile / GeoJSON",
+        service_url=None,
+        where_clause="UPPER(CONAME)='SEVIER'",
+        verified=False,
+        source_note="Use the TN statewide Comptroller layer filtered to Sevier.",
     ),
 }
 
@@ -97,7 +130,9 @@ def sync_county(county_key: str, *, fetch=arcgis._default_fetch) -> SyncOutcome:
 
     settings = get_settings()
     try:
-        raw_fc = arcgis.fetch_layer_geojson(source.service_url, fetch=fetch)
+        raw_fc = arcgis.fetch_layer_geojson(
+            source.service_url, where=source.where_clause, fetch=fetch
+        )
         norm_fc = normalize.normalize_collection(raw_fc, county_key)
         result = bundle.package_bundle(county_key, norm_fc, data_dir=settings.data_dir)
 
