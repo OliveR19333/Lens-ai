@@ -29,11 +29,11 @@ export default function Login() {
   }
 
   return (
-    <div className="min-h-full bg-gas-navy flex flex-col justify-center px-6 py-12">
+    <div className="min-h-full bg-slate-950 flex flex-col justify-center px-6 py-12">
       <div className="text-center mb-8">
-        <img src="/favicon.svg" alt="" className="w-16 h-16 mx-auto mb-3" />
-        <h1 className="text-white text-2xl font-bold">GAS Property Mapping</h1>
-        <p className="text-gas-blue text-sm mt-1">Guardian Aerial Solutions / TNC</p>
+        <img src="/logo.png" alt="Teaster's Natural Creations" className="w-40 h-40 mx-auto mb-3 rounded-2xl" />
+        <h1 className="text-white text-2xl font-bold">TNC GAS Mapping</h1>
+        <p className="text-gas-blue text-sm mt-1">Ground &amp; Aerial Services · Teasters</p>
       </div>
 
       <form onSubmit={onSubmit} className="bg-white rounded-2xl p-6 shadow-lg">

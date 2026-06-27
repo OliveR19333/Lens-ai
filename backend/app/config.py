@@ -16,7 +16,8 @@ class Settings(BaseSettings):
     )
 
     # App
-    app_name: str = "GAS Property Mapping System"
+    app_name: str = "TNC GAS Mapping"
+    contact_email: str = "TNClandscape.Ryan@gmail.com"  # GAS contact (spec §14.4)
     env: str = "development"
     api_host: str = "0.0.0.0"
     api_port: int = 8080

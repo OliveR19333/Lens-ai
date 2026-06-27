@@ -1,11 +1,12 @@
-# GAS Property Mapping System
+# TNC GAS Mapping
 
 Mobile-first workflow that turns a **property address** into a **DJI-compatible
 waypoint mission** and, after the flight, into **two print-ready planning maps**
 (a flat orthomosaic grid map and an elevation-change map) on a locked,
 proportionally-enlargeable scale.
 
-Built for **Guardian Aerial Solutions / TNC** — irrigation system design and
+Built for **Teaster's Natural Creations (TNC)** — *GAS = Ground & Aerial
+Services*, the drone media/mapping branch — for irrigation system design and
 hardscape/landscape construction planning across Blount, Knox, and Sevier
 counties (East Tennessee).
 

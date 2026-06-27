@@ -15,9 +15,9 @@ export default defineConfig({
       registerType: 'autoUpdate',
       includeAssets: ['favicon.svg', 'icons/*.png'],
       manifest: {
-        name: 'GAS Property Mapping',
-        short_name: 'GAS Mapping',
-        description: 'Address → DJI mission → scaled planning maps.',
+        name: 'TNC GAS Mapping',
+        short_name: 'TNC GAS',
+        description: 'Ground & Aerial Services — address → DJI mission → scaled planning maps.',
         theme_color: '#1B3A5C',
         background_color: '#1B3A5C',
         display: 'standalone',
@@ -26,7 +26,7 @@ export default defineConfig({
         icons: [
           { src: 'icons/icon-192.png', sizes: '192x192', type: 'image/png' },
           { src: 'icons/icon-512.png', sizes: '512x512', type: 'image/png' },
-          { src: 'icons/icon-512.png', sizes: '512x512', type: 'image/png', purpose: 'maskable' }
+          { src: 'icons/icon-maskable-512.png', sizes: '512x512', type: 'image/png', purpose: 'maskable' }
         ]
       },
       workbox: {

@@ -20,7 +20,7 @@ export function buildTemplateKml(ring, { droneEnum = 67, finishAction = 'goHome'
   return `<?xml version="1.0" encoding="UTF-8"?>
 <kml xmlns="${KML_NS}" xmlns:wpml="${WPML_NS}">
   <Document>
-    <wpml:author>GAS Property Mapping System</wpml:author>
+    <wpml:author>TNC GAS Mapping</wpml:author>
     <wpml:missionConfig>
       <wpml:flyToWaylineMode>safely</wpml:flyToWaylineMode>
       <wpml:finishAction>${esc(finishAction)}</wpml:finishAction>

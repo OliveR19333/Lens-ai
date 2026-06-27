@@ -10,6 +10,7 @@ import {
 } from '../api/client'
 import { getCachedCounties, getCountyBundle, saveCountyBundle } from '../db/parcelCache'
 import { Button, Card, Banner, Field, TextInput } from '../components/ui'
+import { BRAND } from '../lib/brand'
 
 const COUNTIES = [
   { county: 'blount', county_name: 'Blount County' },
@@ -163,6 +164,12 @@ export default function Settings() {
       <Card>
         <h3 className="font-semibold text-slate-700 mb-1">Account</h3>
         <p className="text-sm text-slate-600">Signed in as {username || 'operator'}.</p>
+        <p className="text-sm text-slate-500 mt-2">
+          Questions about GAS work?{' '}
+          <a className="text-gas-navy underline" href={`mailto:${BRAND.contactEmail}`}>
+            {BRAND.contactEmail}
+          </a>
+        </p>
       </Card>
 
       <TeamMember online={online} />

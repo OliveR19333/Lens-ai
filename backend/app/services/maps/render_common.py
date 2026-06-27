@@ -138,7 +138,7 @@ def draw_title_block(ax, *, title: str, address: str, county: str, scale_label: 
     ax.add_patch(_rect(0.5, 10.25, 7.5, 0.6, "white", edge="black"))
     ax.text(0.65, 10.62, title, fontsize=11, weight="bold", family="sans-serif")
     ax.text(0.65, 10.40, address or "—", fontsize=7.5, family="sans-serif")
-    ax.text(7.85, 10.62, f"GAS · {county.title() if county else ''}", fontsize=7.5,
+    ax.text(7.85, 10.62, f"TNC GAS · {county.title() if county else ''}", fontsize=7.5,
             ha="right", family="sans-serif")
     ax.text(7.85, 10.40, f"{scale_label}  |  {date_str}", fontsize=7.5, ha="right",
             family="sans-serif")
