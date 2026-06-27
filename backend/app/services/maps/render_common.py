@@ -7,6 +7,7 @@ renderers; these helpers receive an Axes already set up in inch coordinates.
 from __future__ import annotations
 
 import datetime as dt
+from pathlib import Path
 from typing import List, Optional, Tuple
 
 from app.services.maps.layout import PageLayout
@@ -131,13 +132,31 @@ def draw_north_arrow(ax, x: float = 7.7, y: float = 9.9) -> None:
     )
 
 
+_LOGO_PATH = Path(__file__).resolve().parents[2] / "assets" / "gas_logo_print.png"
+
+
+def _draw_logo(ax) -> bool:
+    """Stamp the GAS shield (inverted grayscale) at the title-block left."""
+    if not _LOGO_PATH.exists():
+        return False
+    try:
+        import matplotlib.image as mpimg
+
+        img = mpimg.imread(str(_LOGO_PATH))
+        ax.imshow(img, extent=(0.58, 1.12, 10.30, 10.84), zorder=6, aspect="auto")
+        return True
+    except Exception:  # noqa: BLE001 — logo is decorative, never fail the map
+        return False
+
+
 def draw_title_block(ax, *, title: str, address: str, county: str, scale_label: str,
                      date_str: Optional[str] = None) -> None:
-    """Title block: address, date, scale, county (spec §9.1)."""
+    """Title block: logo, address, date, scale, county (spec §9.1)."""
     date_str = date_str or dt.date.today().isoformat()
     ax.add_patch(_rect(0.5, 10.25, 7.5, 0.6, "white", edge="black"))
-    ax.text(0.65, 10.62, title, fontsize=11, weight="bold", family="sans-serif")
-    ax.text(0.65, 10.40, address or "—", fontsize=7.5, family="sans-serif")
+    text_x = 1.25 if _draw_logo(ax) else 0.65
+    ax.text(text_x, 10.62, title, fontsize=11, weight="bold", family="sans-serif")
+    ax.text(text_x, 10.40, address or "—", fontsize=7.5, family="sans-serif")
     ax.text(7.85, 10.62, f"TNC GAS · {county.title() if county else ''}", fontsize=7.5,
             ha="right", family="sans-serif")
     ax.text(7.85, 10.40, f"{scale_label}  |  {date_str}", fontsize=7.5, ha="right",

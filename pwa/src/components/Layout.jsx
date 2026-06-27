@@ -33,7 +33,7 @@ export default function Layout({ children }) {
     <div className="flex flex-col h-full bg-slate-50">
       <header className="bg-gas-navy text-white px-4 py-3 flex items-center justify-between shadow">
         <div className="flex items-center gap-2">
-          <img src="/logo.png" alt="" className="w-7 h-7 rounded" />
+          <img src="/gas-shield.png" alt="" className="w-7 h-7 rounded" />
           <span className="font-semibold tracking-wide">TNC GAS</span>
         </div>
         <div className="flex items-center gap-3">

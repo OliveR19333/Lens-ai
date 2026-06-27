@@ -1,15 +1,12 @@
 # App icons
 
-Drop PNG launcher icons here before building for production:
+Launcher icons for the PWA, generated from the **GAS shield** logo:
 
 - `icon-192.png` — 192×192
-- `icon-512.png` — 512×512 (also used as the maskable icon)
+- `icon-512.png` — 512×512
+- `icon-maskable-512.png` — 512×512 with safe-area padding (maskable)
 
-They are referenced by `vite.config.js` (`manifest.icons`) and `index.html`
-(`apple-touch-icon`). Until real artwork exists, generate placeholders from
-`public/favicon.svg`, e.g.:
-
-```bash
-npx @resvg/resvg-js-cli favicon.svg -w 512 -h 512 icons/icon-512.png
-npx @resvg/resvg-js-cli favicon.svg -w 192 -h 192 icons/icon-192.png
-```
+Referenced by `vite.config.js` (`manifest.icons`) and `index.html`
+(`apple-touch-icon`). The combined Teaster's + GAS lockup used on the login
+screen is `public/logo-lockup.png`; the header/favicon use `public/gas-shield.png`
+and `public/favicon.png`. Regenerate from the source logos if the brand changes.

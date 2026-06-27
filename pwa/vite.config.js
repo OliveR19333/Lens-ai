@@ -13,7 +13,7 @@ export default defineConfig({
     react(),
     VitePWA({
       registerType: 'autoUpdate',
-      includeAssets: ['favicon.svg', 'icons/*.png'],
+      includeAssets: ['favicon.png', 'gas-shield.png', 'logo-lockup.png', 'icons/*.png'],
       manifest: {
         name: 'TNC GAS Mapping',
         short_name: 'TNC GAS',

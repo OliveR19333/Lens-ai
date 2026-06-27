@@ -29,11 +29,13 @@ export default function Login() {
   }
 
   return (
-    <div className="min-h-full bg-slate-950 flex flex-col justify-center px-6 py-12">
-      <div className="text-center mb-8">
-        <img src="/logo.png" alt="Teaster's Natural Creations" className="w-40 h-40 mx-auto mb-3 rounded-2xl" />
-        <h1 className="text-white text-2xl font-bold">TNC GAS Mapping</h1>
-        <p className="text-gas-blue text-sm mt-1">Ground &amp; Aerial Services · Teasters</p>
+    <div className="min-h-full bg-[#0b1d35] flex flex-col justify-center px-6 py-10">
+      <div className="text-center mb-6">
+        <img
+          src="/logo-lockup.png"
+          alt="TNC GAS Mapping — Teaster's Natural Creations · Ground & Aerial Services"
+          className="w-60 max-h-[46vh] object-contain mx-auto"
+        />
       </div>
 
       <form onSubmit={onSubmit} className="bg-white rounded-2xl p-6 shadow-lg">
