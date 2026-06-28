@@ -41,23 +41,25 @@ cd "$APP_DIR"
 # --- 3. Secrets / config (prompt only for what a human must choose) ---
 gen() { openssl rand -base64 36 | tr -d '\n/+=' | cut -c1-40; }
 
-read -rp "Domain for the app (e.g. mapping.example.com): " DOMAIN
-read -rp "Admin username [admin]: " ADMIN_USERNAME
+# Read from the terminal explicitly so prompts work even under `curl | bash`
+# (where stdin would otherwise be the piped script).
+read -rp "Domain for the app (e.g. mapping.example.com): " DOMAIN </dev/tty
+read -rp "Admin username [admin]: " ADMIN_USERNAME </dev/tty
 ADMIN_USERNAME="${ADMIN_USERNAME:-admin}"
-read -rsp "Admin password (your login): " ADMIN_PASSWORD; echo
+read -rsp "Admin password (your login): " ADMIN_PASSWORD </dev/tty; echo
 [ -n "$DOMAIN" ] && [ -n "$ADMIN_PASSWORD" ] || { echo "Domain and admin password are required."; exit 1; }
 
 JWT_SECRET="$(gen)$(gen)"
 POSTGRES_PASSWORD="$(gen)"
 
-# backend/.env — app secrets
+# backend/.env — app secrets. Rewrite keys without sed so arbitrary password
+# characters (#, &, /, |, ...) are handled literally.
 if [ ! -f backend/.env ]; then cp backend/.env.example backend/.env; fi
 set_kv() { # key value file
-  if grep -q "^$1=" "$3"; then
-    sed -i "s|^$1=.*|$1=$2|" "$3"
-  else
-    echo "$1=$2" >> "$3"
-  fi
+  local key="$1" val="$2" file="$3"
+  grep -v "^${key}=" "$file" > "${file}.tmp" 2>/dev/null || true
+  printf '%s=%s\n' "$key" "$val" >> "${file}.tmp"
+  mv "${file}.tmp" "$file"
 }
 set_kv ADMIN_USERNAME "$ADMIN_USERNAME" backend/.env
 set_kv ADMIN_PASSWORD "$ADMIN_PASSWORD" backend/.env
