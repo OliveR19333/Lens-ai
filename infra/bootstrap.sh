@@ -38,19 +38,36 @@ else
 fi
 cd "$APP_DIR"
 
-# --- 3. Secrets / config (prompt only for what a human must choose) ---
+# --- 3. Secrets / config ---
 gen() { openssl rand -base64 36 | tr -d '\n/+=' | cut -c1-40; }
 
-# Read from the terminal explicitly so prompts work even under `curl | bash`
-# (where stdin would otherwise be the piped script).
-read -rp "Domain for the app (e.g. mapping.example.com): " DOMAIN </dev/tty
-read -rp "Admin username [admin]: " ADMIN_USERNAME </dev/tty
-ADMIN_USERNAME="${ADMIN_USERNAME:-admin}"
-read -rsp "Admin password (your login): " ADMIN_PASSWORD </dev/tty; echo
-[ -n "$DOMAIN" ] && [ -n "$ADMIN_PASSWORD" ] || { echo "Domain and admin password are required."; exit 1; }
+# DOMAIN is taken from the first argument so it can't be grabbed from a stray
+# typed-ahead line. Admin username defaults to "admin".
+#   usage: bash infra/bootstrap.sh app.tncgas.com
+DOMAIN="${1:-}"
+ADMIN_USERNAME="${2:-admin}"
 
-JWT_SECRET="$(gen)$(gen)"
-POSTGRES_PASSWORD="$(gen)"
+# Drain any pasted/typed-ahead input so it isn't mistaken for an answer.
+read -t 0.3 -n 100000 -d '' _flush </dev/tty 2>/dev/null || true
+
+if [ -z "$DOMAIN" ]; then
+  read -rp "Domain for the app (e.g. app.tncgas.com): " DOMAIN </dev/tty
+fi
+read -rsp "Admin password (your login): " ADMIN_PASSWORD </dev/tty; echo
+
+case "$DOMAIN" in
+  ""|*" "*|*"&"*|*"/"*)
+    echo "Invalid domain: '$DOMAIN'. Run: bash infra/bootstrap.sh app.tncgas.com"; exit 1;;
+esac
+[ -n "$ADMIN_PASSWORD" ] || { echo "Admin password is required."; exit 1; }
+
+# Reuse an existing DB password / JWT secret on re-runs so we don't break an
+# already-initialized database volume.
+read_existing() { grep "^$1=" "$2" 2>/dev/null | head -1 | cut -d= -f2-; }
+POSTGRES_PASSWORD="$(read_existing POSTGRES_PASSWORD infra/.env)"
+[ -n "$POSTGRES_PASSWORD" ] || POSTGRES_PASSWORD="$(gen)"
+JWT_SECRET="$(read_existing JWT_SECRET backend/.env)"
+[ -n "$JWT_SECRET" ] || JWT_SECRET="$(gen)$(gen)"
 
 # backend/.env — app secrets. Rewrite keys without sed so arbitrary password
 # characters (#, &, /, |, ...) are handled literally.
