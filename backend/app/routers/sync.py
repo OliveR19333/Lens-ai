@@ -4,7 +4,6 @@ from fastapi import APIRouter, Depends, HTTPException, Response, status
 from app.auth import get_current_user
 from app.config import Settings, get_settings
 from app.gis import bundle
-from app.gis.county_sync import COUNTY_SOURCES
 from app.schemas import SyncResponse
 from app.services.geocoding import SUPPORTED_COUNTIES
 from app.workers import tasks
@@ -30,12 +29,12 @@ def parcel_manifest(
     decide whether to re-download on a WiFi connect (spec §5.2 step 6).
     """
     out = []
-    for key in SUPPORTED_COUNTIES:
+    for key, county_name in SUPPORTED_COUNTIES.items():
         b = bundle.read_bundle(key, settings.data_dir)
         out.append(
             {
                 "county": key,
-                "county_name": COUNTY_SOURCES[key].name,
+                "county_name": county_name,
                 "available": b is not None,
                 "version_hash": b[1] if b else None,
                 "gzip_bytes": len(b[0]) if b else 0,
