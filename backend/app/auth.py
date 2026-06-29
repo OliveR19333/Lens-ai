@@ -12,24 +12,37 @@ from typing import Optional
 import jwt
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
-from passlib.context import CryptContext
 
 from app.config import Settings, get_settings
 from app.services.auth_logic import decide_auth
 
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="auth/login", auto_error=False)
 
 
+def _pw_bytes(plain: str) -> bytes:
+    # bcrypt only uses the first 72 bytes; truncate explicitly (newer bcrypt
+    # raises instead of silently truncating).
+    return plain.encode("utf-8")[:72]
+
+
 def verify_password(plain: str, hashed: str) -> bool:
+    """Verify a password against a bcrypt hash (direct bcrypt — no passlib).
+
+    passlib 1.7 is incompatible with bcrypt >= 4.1 (it can't read the version
+    and crashes on a long internal test string), so we call bcrypt directly.
+    """
+    import bcrypt
+
     try:
-        return pwd_context.verify(plain, hashed)
+        return bcrypt.checkpw(_pw_bytes(plain), hashed.encode("utf-8"))
     except Exception:
         return False
 
 
 def hash_password(plain: str) -> str:
-    return pwd_context.hash(plain)
+    import bcrypt
+
+    return bcrypt.hashpw(_pw_bytes(plain), bcrypt.gensalt()).decode("utf-8")
 
 
 def authenticate_user(username: str, password: str, settings: Settings, db=None) -> bool:
