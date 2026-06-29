@@ -1,0 +1,53 @@
+TNC GAS — DJI RC 2 Mission Installer · One-Time Mac Setup
+=========================================================
+
+You do this ONCE. After that, loading a mission is: AirDrop the .kmz to your
+Mac, double-click the installer. ~20 seconds.
+
+Why a Mac is involved at all: the RC 2 is a sealed Android device and the iPhone
+physically cannot write files to it (Apple blocks it). The Mac is the bridge.
+
+---------------------------------------------------------
+STEP 1 — Install the helper tools on your Mac (once)
+---------------------------------------------------------
+Open the Terminal app on your Mac (Cmd-Space, type "Terminal", Enter), then
+paste each line below and press Enter.
+
+  a) If you don't have Homebrew yet, install it:
+
+     /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+
+  b) Install adb (the file-transfer tool):
+
+     brew install android-platform-tools
+
+  c) Download the installer to your Desktop and make it runnable:
+
+     curl -fsSL https://app.tncgas.com/tools/dji-rc2-install.command -o "$HOME/Desktop/TNC GAS Installer.command" && chmod +x "$HOME/Desktop/TNC GAS Installer.command"
+
+You now have "TNC GAS Installer" on your Desktop.
+(First time you double-click it, macOS may say it's from an unidentified
+developer — right-click it -> Open -> Open. Only needed once.)
+
+---------------------------------------------------------
+STEP 2 — Prepare the RC 2 (once)
+---------------------------------------------------------
+  1. On the RC 2: Settings -> About, tap the version/build number 5 times to
+     unlock "Developer Options".
+  2. In Developer Options, turn ON "USB debugging".
+  3. Plug the RC 2 into the Mac with a USB-C cable. On the RC 2 screen, tap
+     "Allow" when it asks about USB debugging.
+  4. Open DJI Fly -> Waypoint, create ONE mission (drop a single dummy point
+     anywhere) and SAVE it. This is the placeholder the installer overwrites.
+     You only make it once and reuse it for every mapping flight.
+
+---------------------------------------------------------
+EACH MISSION (the everyday flow)
+---------------------------------------------------------
+  1. In the TNC GAS app on your iPhone: plan the mission, tap
+     "Save mission file (KMZ)" -> AirDrop it to your Mac.
+  2. Plug the RC 2 into the Mac (USB-C).
+  3. Double-click "TNC GAS Installer" on your Desktop.
+  4. Reopen DJI Fly -> Waypoint on the RC 2. Your mission is loaded. Fly it.
+
+That's it.

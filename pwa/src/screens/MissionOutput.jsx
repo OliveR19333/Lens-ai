@@ -85,41 +85,23 @@ export default function MissionOutput() {
           <FolderInput size={16} /> Load onto your DJI RC 2
         </h3>
         <p className="text-xs text-slate-500 mb-2">
-          DJI Fly has no “import” button, so you swap this file in for a blank
-          placeholder mission on the controller. The Mac is the bridge.
+          Everyday flow — about 20 seconds once the one-time setup is done:
         </p>
-        <p className="text-xs font-semibold text-gas-navy mb-1">One-time setup</p>
-        <ul className="list-disc pl-5 space-y-1 text-sm text-slate-600 mb-2">
-          <li>
-            Install <b>OpenMTP</b> on your Mac (free) — it lets the Mac see the
-            RC 2’s files over USB.
-          </li>
-        </ul>
-        <p className="text-xs font-semibold text-gas-navy mb-1">Each mission</p>
         <ol className="list-decimal pl-5 space-y-1.5 text-sm text-slate-600">
-          <li>
-            Tap <b>Save mission file</b> above → <b>AirDrop</b> it to your Mac
-            (or Save to Files, then AirDrop later).
-          </li>
-          <li>
-            On the <b>RC 2</b>: DJI Fly → <b>Waypoint</b> → create a <b>new</b>
-            mission, drop one dummy point, and <b>save</b>. (Creates the folder.)
-          </li>
-          <li>Plug the RC 2 into the Mac with USB-C. Open <b>OpenMTP</b>.</li>
-          <li>
-            Go to <b>Internal Storage → Android → data → dji.go.v5 → files →
-            waypoint</b>, and open the <b>newest</b> folder (sort by date).
-          </li>
-          <li>
-            Copy the <b>.kmz</b> filename already inside it. Rename your AirDropped
-            <b> {missionName}.kmz</b> to that <b>exact</b> name and drag it in,
-            replacing the placeholder.
-          </li>
-          <li>Eject, reopen <b>DJI Fly → Waypoint</b>. Your mapping grid is the mission. Fly it.</li>
+          <li>Tap <b>Save mission file</b> above → <b>AirDrop</b> it to your Mac.</li>
+          <li>Plug the <b>RC 2</b> into the Mac with USB-C.</li>
+          <li>Double-click <b>“TNC GAS Installer”</b> on your Mac’s Desktop.</li>
+          <li>Reopen <b>DJI Fly → Waypoint</b> on the RC 2 — your mission is loaded. Fly it.</li>
         </ol>
+        <p className="text-xs text-slate-500 mt-3">
+          First time only: set up the Mac helper (~10 min) —{' '}
+          <a href="/tools/SETUP.txt" target="_blank" rel="noreferrer"
+            className="text-gas-navy underline font-semibold">open setup guide</a>.
+        </p>
         <p className="text-xs text-slate-400 mt-2">
-          Tip: keep that one placeholder folder and just re-drop a renamed KMZ each
-          time — after the first run it’s about 20 seconds.
+          The installer auto-finds your AirDropped file and the right slot on the
+          RC 2 — no renaming, no folder digging. (iPhone can’t write to the RC 2
+          directly; the Mac is the required bridge.)
         </p>
       </Card>
 
