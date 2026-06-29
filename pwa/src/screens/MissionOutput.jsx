@@ -82,34 +82,44 @@ export default function MissionOutput() {
 
       <Card>
         <h3 className="font-semibold text-slate-700 mb-2 inline-flex items-center gap-2">
-          <FolderInput size={16} /> Get it into DJI Fly
+          <FolderInput size={16} /> Load onto your DJI RC 2
         </h3>
         <p className="text-xs text-slate-500 mb-2">
           DJI Fly has no “import” button, so you swap this file in for a blank
-          placeholder mission. You only set this up once per flight.
+          placeholder mission on the controller. The Mac is the bridge.
         </p>
+        <p className="text-xs font-semibold text-gas-navy mb-1">One-time setup</p>
+        <ul className="list-disc pl-5 space-y-1 text-sm text-slate-600 mb-2">
+          <li>
+            Install <b>OpenMTP</b> on your Mac (free) — it lets the Mac see the
+            RC 2’s files over USB.
+          </li>
+        </ul>
+        <p className="text-xs font-semibold text-gas-navy mb-1">Each mission</p>
         <ol className="list-decimal pl-5 space-y-1.5 text-sm text-slate-600">
-          <li>Tap <b>Save mission file</b> above → <b>Save to Files</b> → <b>On My iPhone</b>.</li>
           <li>
-            Open <b>DJI Fly</b> → <b>Waypoint</b> mode → create a <b>new</b> mission,
-            drop one dummy point anywhere, and <b>save</b> it. (This makes the folder
-            we’ll drop into.)
+            Tap <b>Save mission file</b> above → <b>AirDrop</b> it to your Mac
+            (or Save to Files, then AirDrop later).
           </li>
           <li>
-            Open the <b>Files</b> app → <b>On My iPhone</b> → <b>DJI Fly</b> →
-            <b> wayline_mission</b>, and open the <b>newest</b> numbered folder.
+            On the <b>RC 2</b>: DJI Fly → <b>Waypoint</b> → create a <b>new</b>
+            mission, drop one dummy point, and <b>save</b>. (Creates the folder.)
+          </li>
+          <li>Plug the RC 2 into the Mac with USB-C. Open <b>OpenMTP</b>.</li>
+          <li>
+            Go to <b>Internal Storage → Android → data → dji.go.v5 → files →
+            waypoint</b>, and open the <b>newest</b> folder (sort by date).
           </li>
           <li>
-            Note the <b>.kmz</b> filename inside it. Rename your saved
-            <b> {missionName}.kmz</b> to that <b>exact</b> name and move it into
-            that folder, replacing the file.
+            Copy the <b>.kmz</b> filename already inside it. Rename your AirDropped
+            <b> {missionName}.kmz</b> to that <b>exact</b> name and drag it in,
+            replacing the placeholder.
           </li>
-          <li>Reopen <b>DJI Fly → Waypoint</b>. Your mapping grid is now the mission. Fly it.</li>
+          <li>Eject, reopen <b>DJI Fly → Waypoint</b>. Your mapping grid is the mission. Fly it.</li>
         </ol>
         <p className="text-xs text-slate-400 mt-2">
-          Flying with a DJI RC controller (built-in screen)? The same{' '}
-          <b>wayline_mission</b> folder lives on the controller — connect it to a
-          computer to do the swap.
+          Tip: keep that one placeholder folder and just re-drop a renamed KMZ each
+          time — after the first run it’s about 20 seconds.
         </p>
       </Card>
 
