@@ -1,0 +1,2 @@
+# Drop county parcel .zip shapefiles here to import them on the server:
+#   docker compose -f docker-compose.prod.yml exec backend python -m app.cli importparcels <county> /imports/<file>.zip

@@ -46,6 +46,7 @@ services:
       - backend_storage:/app/storage
       - backend_data:/app/data
       - ./models:/app/models:ro
+      - ./imports:/imports
     restart: unless-stopped
 
   worker:
