@@ -37,11 +37,21 @@ def lookup_parcel(db: Session, lat: float, lng: float, county: str) -> Optional[
         LIMIT 1;
     """
     table = _table_for(county)
+
+    # A county's table only exists once its parcels have been imported. Querying
+    # a missing relation raises a Postgres error that aborts the transaction
+    # (breaking the next county in the search loop), so skip absent tables.
+    exists = db.execute(
+        text("SELECT to_regclass(:t)"), {"t": f"public.{table}"}
+    ).scalar()
+    if exists is None:
+        return None
+
     sql = text(
         f"""
-        SELECT parcel_id, owner, address, ST_AsGeoJSON(geom) AS geojson
+        SELECT parcel_id, owner, address, ST_AsGeoJSON(geometry) AS geojson
         FROM {table}
-        WHERE ST_Contains(geom, ST_SetSRID(ST_MakePoint(:lng, :lat), 4326))
+        WHERE ST_Contains(geometry, ST_SetSRID(ST_MakePoint(:lng, :lat), 4326))
         LIMIT 1
         """
     )
