@@ -6,18 +6,7 @@
 // API can't take files.
 import { kmzUrl } from '../api/client'
 
-async function shareBlob(blob, filename) {
-  const file = new File([blob], filename, { type: 'application/vnd.google-earth.kmz' })
-
-  if (navigator.canShare && navigator.canShare({ files: [file] })) {
-    await navigator.share({
-      files: [file],
-      title: 'DJI Waypoint Mission',
-      text: 'Open in DJI Fly to import this mapping mission.'
-    })
-    return { method: 'share-sheet' }
-  }
-
+function downloadBlob(blob, filename) {
   const objUrl = URL.createObjectURL(blob)
   const a = document.createElement('a')
   a.href = objUrl
@@ -25,8 +14,29 @@ async function shareBlob(blob, filename) {
   document.body.appendChild(a)
   a.click()
   a.remove()
-  URL.revokeObjectURL(objUrl)
+  // Delay revoke so Safari/Chrome don't cancel the in-flight download.
+  setTimeout(() => URL.revokeObjectURL(objUrl), 2000)
   return { method: 'download' }
+}
+
+async function shareBlob(blob, filename) {
+  const file = new File([blob], filename, { type: 'application/vnd.google-earth.kmz' })
+  const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent || '')
+
+  // On a phone, the share sheet (AirDrop / Save to Files) is the useful path.
+  // On desktop it tends to be a dead end, so just download to disk — which is
+  // also exactly where the Mac installer looks for the file.
+  if (isMobile && navigator.canShare && navigator.canShare({ files: [file] })) {
+    try {
+      await navigator.share({ files: [file], title: 'DJI Waypoint Mission' })
+      return { method: 'share-sheet' }
+    } catch (e) {
+      if (e && e.name === 'AbortError') return { method: 'cancelled' }
+      // Any other share failure → fall back to a direct download.
+    }
+  }
+
+  return downloadBlob(blob, filename)
 }
 
 // Share a KMZ generated on-device (offline path — preferred in the field).

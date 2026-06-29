@@ -31,10 +31,11 @@ export default function MissionOutput() {
     }
     try {
       const { method } = await shareMissionBlob(kmzBlob, missionName)
+      if (method === 'cancelled') return
       setMsg(
         method === 'share-sheet'
-          ? 'Tap “Save to Files”, then follow the import steps below.'
-          : 'KMZ saved. Open the Files app and follow the import steps below.'
+          ? 'Choose AirDrop (to your Mac) or “Save to Files,” then run the installer.'
+          : `Saved ${missionName}.kmz to your Downloads. Now run the installer below.`
       )
     } catch {
       setErr('Could not save the KMZ. Try again.')
