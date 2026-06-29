@@ -2,8 +2,38 @@ import { useEffect, useRef } from 'react'
 import maplibregl from 'maplibre-gl'
 import 'maplibre-gl/dist/maplibre-gl.css'
 
+// High-resolution aerial imagery basemap (Esri World Imagery — free, no API key)
+// with a place-labels overlay, so you can actually see rooftops, driveways, and
+// tree lines when planning a flight. Overridable via VITE_MAP_STYLE_URL.
+const SATELLITE_STYLE = {
+  version: 8,
+  sources: {
+    'esri-imagery': {
+      type: 'raster',
+      tiles: [
+        'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+      ],
+      tileSize: 256,
+      maxzoom: 19,
+      attribution: 'Imagery © Esri, Maxar, Earthstar Geographics, USDA, USGS',
+    },
+    'esri-labels': {
+      type: 'raster',
+      tiles: [
+        'https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}',
+      ],
+      tileSize: 256,
+      maxzoom: 19,
+    },
+  },
+  layers: [
+    { id: 'imagery', type: 'raster', source: 'esri-imagery' },
+    { id: 'labels', type: 'raster', source: 'esri-labels' },
+  ],
+}
+
 // MapLibre GL preview of a parcel boundary (spec §3.1, §3.3 Parcel Preview).
-// Uses an offline-capable vector style; the boundary is drawn as a fill+line.
+// Aerial-imagery basemap; the boundary is drawn as a high-contrast fill+line.
 export default function ParcelMap({ geojson, center, height = 300, markers = [], onPick }) {
   const ref = useRef(null)
   const mapRef = useRef(null)
@@ -15,14 +45,16 @@ export default function ParcelMap({ geojson, center, height = 300, markers = [],
 
   useEffect(() => {
     if (!ref.current) return
-    const styleUrl =
-      import.meta.env.VITE_MAP_STYLE_URL || 'https://demotiles.maplibre.org/style.json'
+    const styleUrl = import.meta.env.VITE_MAP_STYLE_URL
     const map = new maplibregl.Map({
       container: ref.current,
-      style: styleUrl,
+      style: styleUrl || SATELLITE_STYLE,
       center: center || [-83.97, 35.75],
-      zoom: 16
+      zoom: 18,
+      maxZoom: 21
     })
+    map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-right')
+    map.addControl(new maplibregl.ScaleControl({ unit: 'imperial' }), 'bottom-left')
     mapRef.current = map
 
     map.on('load', () => {
@@ -32,13 +64,20 @@ export default function ParcelMap({ geojson, center, height = 300, markers = [],
         id: 'parcel-fill',
         type: 'fill',
         source: 'parcel',
-        paint: { 'fill-color': '#7BAFD4', 'fill-opacity': 0.25 }
+        paint: { 'fill-color': '#FFD400', 'fill-opacity': 0.12 }
+      })
+      // Dark casing under a bright line so the boundary reads on any imagery.
+      map.addLayer({
+        id: 'parcel-line-casing',
+        type: 'line',
+        source: 'parcel',
+        paint: { 'line-color': '#000000', 'line-width': 6, 'line-opacity': 0.5 }
       })
       map.addLayer({
         id: 'parcel-line',
         type: 'line',
         source: 'parcel',
-        paint: { 'line-color': '#1B3A5C', 'line-width': 3 }
+        paint: { 'line-color': '#FFD400', 'line-width': 2.5 }
       })
       try {
         const b = new maplibregl.LngLatBounds()
