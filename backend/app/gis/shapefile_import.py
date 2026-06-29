@@ -38,12 +38,15 @@ class LayerInfo:
 
 
 def _extract(zip_path: str) -> str:
-    if not zip_path.lower().endswith(".zip"):
-        return os.path.dirname(zip_path) or "."
-    dest = tempfile.mkdtemp(prefix="gas_shp_")
-    with zipfile.ZipFile(zip_path) as zf:
-        zf.extractall(dest)
-    return dest
+    # Accept a .zip, a directory of shapefiles, or a direct .shp path.
+    if os.path.isdir(zip_path):
+        return zip_path
+    if zip_path.lower().endswith(".zip"):
+        dest = tempfile.mkdtemp(prefix="gas_shp_")
+        with zipfile.ZipFile(zip_path) as zf:
+            zf.extractall(dest)
+        return dest
+    return os.path.dirname(zip_path) or "."
 
 
 def _find_shapefiles(root: str) -> List[str]:
