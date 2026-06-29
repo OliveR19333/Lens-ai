@@ -1,7 +1,9 @@
 import { useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Ruler } from 'lucide-react'
+import { Ruler, MousePointerClick } from 'lucide-react'
 import { useStore } from '../store/useStore'
+import { lookupParcel } from '../api/client'
+import { lookupParcelOffline } from '../lib/offline/parcelLookup'
 import { buildMissionKmz } from '../lib/offline/mission'
 import { computePrintScale } from '../lib/offline/scale'
 import { Button, Card, Field, Banner } from '../components/ui'
@@ -14,14 +16,45 @@ export default function ParcelPreview() {
   const draft = useStore((s) => s.draft)
   const setDraft = useStore((s) => s.setDraft)
 
+  const online = useStore((s) => s.online)
   const [altitudeFt, setAltitudeFt] = useState(120)
   const [forwardOverlap, setForwardOverlap] = useState(80)
   const [sideOverlap, setSideOverlap] = useState(75)
   const [busy, setBusy] = useState(false)
+  const [picking, setPicking] = useState(false)
+  const [note, setNote] = useState('')
   const [err, setErr] = useState('')
 
   const parcelGeojson = draft.parcel?.geojson
   const center = draft.geocode ? [draft.geocode.lng, draft.geocode.lat] : undefined
+
+  // Geocoders interpolate along the street, so the boundary can land on a
+  // neighbor. Tapping the actual property re-runs point-in-polygon at that exact
+  // spot and snaps the boundary to the right lot (cache first, then server).
+  async function onPick([lng, lat]) {
+    setErr('')
+    setNote('')
+    setPicking(true)
+    try {
+      const hint = draft.parcel?.county || draft.geocode?.county || null
+      let parcel = await lookupParcelOffline(lng, lat, hint)
+      if (!parcel && online) {
+        try {
+          parcel = await lookupParcel(lat, lng, hint || undefined)
+        } catch {
+          /* fall through */
+        }
+      }
+      if (!parcel) {
+        setNote('No parcel at that spot — tap directly on the property.')
+        return
+      }
+      setDraft({ parcel, geocode: { ...(draft.geocode || {}), lat, lng, source: 'map-tap' } })
+      setNote('Boundary updated to the property you tapped.')
+    } finally {
+      setPicking(false)
+    }
+  }
 
   // Measuring readout — computed on-device, instantly, offline (spec §9.3).
   const measure = useMemo(() => {
@@ -70,9 +103,19 @@ export default function ParcelPreview() {
         </Banner>
       ) : (
         <>
+          <Banner tone="info">
+            <span className="inline-flex items-center gap-2">
+              <MousePointerClick size={16} />
+              Wrong lot? Tap the correct property on the map to snap the boundary.
+            </span>
+          </Banner>
+
           <Card className="p-0 overflow-hidden">
-            <ParcelMap geojson={parcelGeojson} center={center} />
+            <ParcelMap geojson={parcelGeojson} center={center} onPick={onPick} height={360} />
           </Card>
+
+          {picking && <p className="text-xs text-slate-400">Finding parcel…</p>}
+          {note && <Banner tone="info">{note}</Banner>}
 
           {measure && (
             <Card>
