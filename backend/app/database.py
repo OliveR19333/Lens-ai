@@ -43,6 +43,10 @@ def init_db() -> None:
     """
     from sqlalchemy import text
 
+    # Import the models so their tables are registered on Base.metadata before
+    # create_all runs — otherwise create_all sees no tables and creates nothing.
+    import app.models  # noqa: F401
+
     with engine.begin() as conn:
         conn.execute(text("CREATE EXTENSION IF NOT EXISTS postgis"))
     Base.metadata.create_all(bind=engine)
