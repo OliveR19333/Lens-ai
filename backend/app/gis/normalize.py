@@ -11,7 +11,8 @@ from typing import Optional
 
 # Candidate source field names, in priority order, per target field.
 FIELD_ALIASES = {
-    "parcel_id": ["parcel_id", "PARCELID", "PARCEL_ID", "PIN", "PARID", "Parcel", "GPIN", "APN"],
+    "parcel_id": ["parcel_id", "PARCELID", "PARCEL_ID", "PIN", "PARID", "Parcel",
+                  "GPIN", "APN", "GISLINK", "GISLINK2", "PARCELNUMB", "PARCEL_NUM"],
     "owner": ["owner", "OWNER", "OWNERNAME", "OwnerName", "OWNER_NAME", "Owner1", "DEEDED_OWN"],
     "address": [
         "address", "ADDRESS", "SITEADDR", "SITE_ADDR", "PropAddr", "PROP_ADDR",

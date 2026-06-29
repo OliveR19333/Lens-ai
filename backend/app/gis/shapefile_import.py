@@ -107,19 +107,37 @@ def pick_parcels_layer(zip_path: str, layer: Optional[str] = None) -> LayerInfo:
 
 
 def load_feature_collection(layer_path: str, county: str) -> dict:
-    """Read a shapefile layer → reproject to 4326 → normalized FeatureCollection."""
+    """Read a shapefile layer → reproject to 4326 → normalized FeatureCollection.
+
+    Keeps only geometry + columns that could carry parcel id / owner / address
+    (everything we use). Dropping the rest both avoids non-JSON-serializable
+    columns (dates, etc.) and shrinks the bundle the phone has to download.
+    """
     import json
 
     import geopandas as gpd
+    import pandas as pd
 
     gdf = gpd.read_file(layer_path)
     if gdf.crs is None:
         logger.warning("Layer has no CRS; assuming EPSG:4326.")
     else:
         gdf = gdf.to_crs(epsg=4326)
-    # Drop rows without geometry, then emit GeoJSON and normalize attributes.
     gdf = gdf[~gdf.geometry.isna()]
-    raw_fc = json.loads(gdf.to_json())
+
+    geom_col = gdf.geometry.name
+    wanted = {a.lower() for aliases in normalize.FIELD_ALIASES.values() for a in aliases}
+    keep = [c for c in gdf.columns if c == geom_col or c.lower() in wanted]
+    slim = gdf[keep].copy()
+
+    # Stringify any remaining non-JSON-safe columns (dates, etc.) defensively.
+    for c in slim.columns:
+        if c == geom_col:
+            continue
+        if pd.api.types.is_datetime64_any_dtype(slim[c]) or slim[c].dtype == object:
+            slim[c] = slim[c].astype(str)
+
+    raw_fc = json.loads(slim.to_json())
     return normalize.normalize_collection(raw_fc, county)
 
 
