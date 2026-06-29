@@ -38,6 +38,8 @@ class County(str, enum.Enum):
     blount = "blount"
     knox = "knox"
     sevier = "sevier"
+    loudon = "loudon"
+    monroe = "monroe"
 
 
 class ProjectStatus(str, enum.Enum):

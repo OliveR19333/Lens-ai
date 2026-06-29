@@ -15,7 +15,9 @@ import { BRAND } from '../lib/brand'
 const COUNTIES = [
   { county: 'blount', county_name: 'Blount County' },
   { county: 'knox', county_name: 'Knox County' },
-  { county: 'sevier', county_name: 'Sevier County' }
+  { county: 'sevier', county_name: 'Sevier County' },
+  { county: 'loudon', county_name: 'Loudon County' },
+  { county: 'monroe', county_name: 'Monroe County' }
 ]
 
 // Cheap content hash so the PWA can tell when a bundle changed (spec §5.2).

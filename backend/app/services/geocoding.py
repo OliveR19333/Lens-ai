@@ -21,6 +21,8 @@ SUPPORTED_COUNTIES = {
     "blount": "Blount County",
     "knox": "Knox County",
     "sevier": "Sevier County",
+    "loudon": "Loudon County",
+    "monroe": "Monroe County",
 }
 
 CENSUS_URL = "https://geocoding.geo.census.gov/geocoder/geographies/onelineaddress"

@@ -14,6 +14,8 @@ COUNTY_PORTALS = {
     "blount": ("Blount County", "https://www.blounttn.org/2153/GIS-Mapping"),
     "knox": ("Knox County", "https://www.knoxplanning.org/gis/"),
     "sevier": ("Sevier County", "https://www.seviercountytn.org/gis/"),
+    "loudon": ("Loudon County", "https://loudoncounty-tn.gov/"),
+    "monroe": ("Monroe County", "https://monroegovtn.org/"),
 }
 
 

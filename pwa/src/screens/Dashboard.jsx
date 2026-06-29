@@ -63,7 +63,9 @@ export default function Dashboard() {
             ? counties
             : [{ county: 'blount', county_name: 'Blount County' },
                { county: 'knox', county_name: 'Knox County' },
-               { county: 'sevier', county_name: 'Sevier County' }]
+               { county: 'sevier', county_name: 'Sevier County' },
+               { county: 'loudon', county_name: 'Loudon County' },
+               { county: 'monroe', county_name: 'Monroe County' }]
           ).map((c) => {
             const local = cacheFor(c.county)
             return (

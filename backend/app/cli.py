@@ -53,6 +53,35 @@ def _syncparcels() -> None:
               + (f" ({outcome.parcel_count} parcels)" if outcome.parcel_count else ""))
 
 
+def _importparcels(args: list[str]) -> None:
+    from app.config import get_settings
+    from app.gis import shapefile_import as shp
+
+    if not args:
+        print("usage: python -m app.cli importparcels <county> <zip_path> [--list] [--layer NAME]")
+        return
+    county = args[0]
+    zip_path = args[1] if len(args) > 1 else None
+    if "--list" in args or not zip_path:
+        if not zip_path:
+            print("Provide the path to the zip: importparcels <county> <zip_path> --list")
+            return
+        print(f"Layers in {zip_path}:")
+        for li in shp.list_layers(zip_path):
+            print(f"  [{li.score:>2}]  {li.name:<28} {li.n_features:>8} features  fields={li.fields[:6]}")
+        print("\nThe top-scored layer is used by default; override with --layer NAME.")
+        return
+    layer = None
+    if "--layer" in args:
+        i = args.index("--layer")
+        layer = args[i + 1] if i + 1 < len(args) else None
+    summary = shp.import_parcels(county, zip_path, get_settings().data_dir, layer=layer)
+    print(
+        f"✅ Imported {summary['parcels']} parcels for {summary['county']} "
+        f"from layer '{summary['layer']}' ({summary['bundle_kb']} KB bundle, v{summary['version']})."
+    )
+
+
 def main(argv: list[str] | None = None) -> int:
     argv = argv if argv is not None else sys.argv[1:]
     if not argv:
@@ -68,6 +97,8 @@ def main(argv: list[str] | None = None) -> int:
         _createuser(rest[0], rest[1], rest[2] if len(rest) > 2 else None)
     elif cmd == "syncparcels":
         _syncparcels()
+    elif cmd == "importparcels":
+        _importparcels(rest)
     else:
         print(f"Unknown command: {cmd}")
         print(__doc__)
