@@ -1,16 +1,11 @@
 """
 Find a property by street address inside QGIS.
 
-Run once per QGIS session (Plugins -> Python Console):
-
     exec(open('/Users/ryanolive/TNC-GAS/tools/find_address.py').read())
-
-Then jump to any address:
-
     find("123 Main St, Maryville, TN")
 
-Geocodes the address (US Census, then OpenStreetMap as a fallback), zooms the map
-to it, and drops a red pin. The parcel under the pin is the property.
+Geocodes (US Census, then OpenStreetMap fallback), zooms the map to it, and drops
+a red pin. Transforms the result into the live map canvas CRS so it lands correctly.
 """
 import json
 import urllib.parse
@@ -34,7 +29,7 @@ def _geocode(address):
             c = m[0]["coordinates"]
             return float(c["y"]), float(c["x"]), m[0].get("matchedAddress", address)
     except Exception as exc:  # noqa: BLE001
-        print("(census lookup failed:", exc, ")")
+        print("(census failed:", exc, ")")
     try:
         qs = urllib.parse.urlencode({"q": address, "format": "json", "limit": "1"})
         req = urllib.request.Request("https://nominatim.openstreetmap.org/search?" + qs,
@@ -43,7 +38,7 @@ def _geocode(address):
         if d:
             return float(d[0]["lat"]), float(d[0]["lon"]), d[0].get("display_name", address)
     except Exception as exc:  # noqa: BLE001
-        print("(osm lookup failed:", exc, ")")
+        print("(osm failed:", exc, ")")
     return None
 
 
@@ -53,14 +48,18 @@ def find(address):
         print("No location found for:", address)
         return
     lat, lon, matched = hit
-    print("Found:", matched)
-    proj = QgsProject.instance()
-    dest = proj.crs()
-    tr = QgsCoordinateTransform(QgsCoordinateReferenceSystem("EPSG:4326"), dest, proj)
-    pt = tr.transform(QgsPointXY(lon, lat))
     canvas = iface.mapCanvas()
+    dest = canvas.mapSettings().destinationCrs()          # the REAL canvas CRS
+    tr = QgsCoordinateTransform(QgsCoordinateReferenceSystem("EPSG:4326"),
+                                dest, QgsProject.instance())
+    pt = tr.transform(QgsPointXY(lon, lat))
+    print("Found:", matched)
+    print("  lat,lon =", round(lat, 6), round(lon, 6),
+          "| canvas CRS:", dest.authid(),
+          "| map xy:", round(pt.x(), 1), round(pt.y(), 1))
     canvas.setCenter(pt)
     canvas.zoomScale(1500)
+    proj = QgsProject.instance()
     for lyr in proj.mapLayersByName("Search Result"):
         proj.removeMapLayer(lyr)
     vl = QgsVectorLayer(f"Point?crs={dest.authid()}", "Search Result", "memory")
@@ -71,7 +70,7 @@ def find(address):
         {"name": "circle", "color": "255,0,0", "size": "4", "outline_color": "white"}))
     proj.addMapLayer(vl)
     canvas.refresh()
-    print("Zoomed in — the parcel under the red pin is your property.")
+    print("Zoomed in — red pin marks the property.")
 
 
-print("Ready. Find a property with, e.g.:  find('123 Main St, Maryville, TN')")
+print("Ready. Example:  find('123 Main St, Maryville, TN')")
