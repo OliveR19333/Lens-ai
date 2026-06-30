@@ -1,10 +1,11 @@
 import { useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Ruler, MousePointerClick } from 'lucide-react'
+import { Ruler, MousePointerClick, Plane } from 'lucide-react'
 import { useStore } from '../store/useStore'
 import { lookupParcel } from '../api/client'
 import { lookupParcelOffline } from '../lib/offline/parcelLookup'
 import { buildMissionKmz } from '../lib/offline/mission'
+import { planGrid, manualFlightSettings } from '../lib/offline/grid'
 import { computePrintScale } from '../lib/offline/scale'
 import { Button, Card, Field, Banner } from '../components/ui'
 import ParcelMap from '../components/ParcelMap'
@@ -66,6 +67,32 @@ export default function ParcelPreview() {
     }
   }, [parcelGeojson])
 
+  // Live flight plan — recomputed as the sliders move so the path on the map and
+  // the hand-flying settings stay in sync.
+  const plan = useMemo(() => {
+    if (!parcelGeojson) return null
+    try {
+      return planGrid(parcelGeojson, {
+        altitudeFt,
+        forwardOverlap: forwardOverlap / 100,
+        sideOverlap: sideOverlap / 100
+      })
+    } catch {
+      return null
+    }
+  }, [parcelGeojson, altitudeFt, forwardOverlap, sideOverlap])
+
+  const flightPath = useMemo(() => {
+    if (!plan?.waypoints?.length) return null
+    return {
+      type: 'Feature',
+      properties: {},
+      geometry: { type: 'LineString', coordinates: plan.waypoints.map((w) => [w.lng, w.lat]) }
+    }
+  }, [plan])
+
+  const manual = useMemo(() => (plan ? manualFlightSettings(plan.photoSpacingFt) : null), [plan])
+
   async function onGenerate() {
     if (!parcelGeojson) {
       setErr('No parcel boundary loaded. Go back and locate a property.')
@@ -106,12 +133,14 @@ export default function ParcelPreview() {
           <Banner tone="info">
             <span className="inline-flex items-center gap-2">
               <MousePointerClick size={16} />
-              Wrong lot? Tap the correct property on the map to snap the boundary.
+              Wrong lot? Tap the correct property to snap the boundary. The orange
+              line is the path to fly.
             </span>
           </Banner>
 
           <Card className="p-0 overflow-hidden">
-            <ParcelMap geojson={parcelGeojson} center={center} onPick={onPick} height={360} />
+            <ParcelMap geojson={parcelGeojson} center={center} onPick={onPick}
+              flightPath={flightPath} height={360} />
           </Card>
 
           {picking && <p className="text-xs text-slate-400">Finding parcel…</p>}
@@ -139,8 +168,8 @@ export default function ParcelPreview() {
           )}
 
           <Card>
-            <h3 className="font-semibold text-slate-700 mb-2">Flight settings (spec §6.1)</h3>
-            <Field label={`Altitude: ${altitudeFt} ft AGL`} hint="Adjustable 80–200 ft.">
+            <h3 className="font-semibold text-slate-700 mb-2">Flight settings</h3>
+            <Field label={`Altitude: ${altitudeFt} ft AGL`} hint="120 ft is ideal for property mapping.">
               <input type="range" min="80" max="200" step="5" value={altitudeFt}
                 onChange={(e) => setAltitudeFt(Number(e.target.value))} className="w-full" />
             </Field>
@@ -154,12 +183,20 @@ export default function ParcelPreview() {
                   onChange={(e) => setSideOverlap(Number(e.target.value))} className="w-full" />
               </Field>
             </div>
+            {plan && manual && (
+              <p className="text-xs text-slate-500 mt-1">
+                {plan.lineCount} passes · {plan.lineSpacingFt} ft apart · fly ~{manual.speedMph} mph ·
+                photo every {manual.intervalSec}s
+              </p>
+            )}
           </Card>
 
           {err && <Banner tone="error">{err}</Banner>}
 
           <Button onClick={onGenerate} disabled={busy}>
-            {busy ? 'Generating KMZ…' : 'Confirm & generate mission (offline)'}
+            <span className="inline-flex items-center justify-center gap-2">
+              <Plane size={18} /> {busy ? 'Building flight plan…' : 'Confirm & view flight plan'}
+            </span>
           </Button>
         </>
       )}

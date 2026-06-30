@@ -34,7 +34,7 @@ const SATELLITE_STYLE = {
 
 // MapLibre GL preview of a parcel boundary (spec §3.1, §3.3 Parcel Preview).
 // Aerial-imagery basemap; the boundary is drawn as a high-contrast fill+line.
-export default function ParcelMap({ geojson, center, height = 300, markers = [], onPick }) {
+export default function ParcelMap({ geojson, center, height = 300, markers = [], onPick, flightPath }) {
   const ref = useRef(null)
   const mapRef = useRef(null)
   const markerObjs = useRef([])
@@ -99,6 +99,35 @@ export default function ParcelMap({ geojson, center, height = 300, markers = [],
     return () => map.remove()
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [geojson])
+
+  // Draw / update the manual flight path (the lawnmower lines to fly by eye)
+  // without recreating the map, so it tracks the altitude/overlap sliders live.
+  useEffect(() => {
+    const map = mapRef.current
+    if (!map) return
+    const apply = () => {
+      const data = flightPath || { type: 'FeatureCollection', features: [] }
+      if (map.getSource('flightpath')) {
+        map.getSource('flightpath').setData(data)
+        return
+      }
+      map.addSource('flightpath', { type: 'geojson', data })
+      map.addLayer({
+        id: 'flightpath-casing',
+        type: 'line',
+        source: 'flightpath',
+        paint: { 'line-color': '#000000', 'line-width': 5, 'line-opacity': 0.4 }
+      })
+      map.addLayer({
+        id: 'flightpath-line',
+        type: 'line',
+        source: 'flightpath',
+        paint: { 'line-color': '#FF6A00', 'line-width': 2 }
+      })
+    }
+    if (map.isStyleLoaded()) apply()
+    else map.once('load', apply)
+  }, [flightPath])
 
   // Render annotation markers without recreating the map.
   useEffect(() => {

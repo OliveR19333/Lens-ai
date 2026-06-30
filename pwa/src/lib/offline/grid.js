@@ -15,6 +15,20 @@ export function footprintFt(camera, altitudeFt) {
   return [across, along]
 }
 
+// Settings for flying the grid BY HAND with the camera on a timed interval
+// (no programmed mission needed). Picks the smallest reliable interval, then the
+// ground speed that keeps photos ~photoSpacingFt apart for the target overlap.
+export function manualFlightSettings(photoSpacingFt) {
+  let intervalSec = 2 // DJI Mini's shortest reliable JPEG interval.
+  let speedMph = (photoSpacingFt / intervalSec) * 0.681818
+  if (speedMph > 13) {
+    intervalSec = 3 // tight spacing would need an unsafe speed → slow the camera.
+    speedMph = (photoSpacingFt / intervalSec) * 0.681818
+  }
+  speedMph = Math.max(2, Math.round(speedMph * 10) / 10)
+  return { intervalSec, speedMph }
+}
+
 // Returns { waypoints:[{lng,lat,altitudeFt}], lineSpacingFt, photoSpacingFt,
 //           lineCount, altitudeFt, flightAxis, estimatedPhotos }
 export function planGrid(parcelGeojson, opts = {}) {
