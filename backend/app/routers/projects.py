@@ -2,7 +2,7 @@
 from pathlib import Path
 from typing import List
 
-from fastapi import APIRouter, Depends, File, HTTPException, UploadFile, status
+from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile, status
 from fastapi.responses import FileResponse
 from sqlalchemy.orm import Session
 
@@ -163,6 +163,40 @@ async def upload_images(
         status=project.status.value,
         webodm_task_id=task.id,
         message=f"Queued {len(saved)} images for WebODM processing.",
+    )
+
+
+@router.post("/{project_id}/upload-video", response_model=ProjectStatusResponse)
+async def upload_video(
+    project_id: str,
+    video: UploadFile = File(...),
+    fps: float = Form(1.0),
+    db: Session = Depends(get_db),
+    _user: str = Depends(get_current_user),
+):
+    """`POST /project/{id}/upload-video` → upload a flight video; the server
+    extracts frames at ``fps`` and feeds them to WebODM like an image set.
+
+    Recording continuous video guarantees coverage with no gaps from a missed
+    interval shot — the pilot just flies the passes with the camera rolling.
+    """
+    project = db.get(Project, project_id)
+    if not project:
+        raise HTTPException(status_code=404, detail="Project not found")
+
+    try:
+        saved = await webodm.stage_video_frames(project_id, video, fps=fps)
+    except webodm.WebODMError as exc:
+        raise HTTPException(status_code=400, detail=str(exc))
+
+    task = tasks.process_webodm_job.delay(project_id, saved)
+    project.status = ProjectStatus.processing
+    db.commit()
+    return ProjectStatusResponse(
+        id=project_id,
+        status=project.status.value,
+        webodm_task_id=task.id,
+        message=f"Extracted {len(saved)} frames from video; queued for WebODM processing.",
     )
 
 

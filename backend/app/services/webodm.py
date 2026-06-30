@@ -256,6 +256,48 @@ async def stage_uploads(project_id: str, images) -> List[str]:
     return saved
 
 
+async def stage_video_frames(project_id: str, video, fps: float = 1.0) -> List[str]:
+    """Save an uploaded flight video and extract still frames at ``fps`` frames per
+    second as the image set for photogrammetry. Returns the frame paths.
+
+    Continuous video guarantees coverage (no gaps from a missed interval shot);
+    extracting ~1-2 fps gives plenty of overlapping stills for the orthomosaic.
+    Requires ``ffmpeg`` on the server (installed in the backend image).
+    """
+    import shutil
+    import subprocess
+
+    from app.storage import project_dir
+
+    if not 0.1 <= fps <= 5.0:
+        raise WebODMError("Frame rate must be between 0.1 and 5 fps.")
+    if not shutil.which("ffmpeg"):
+        raise WebODMError("ffmpeg is not installed on the server; cannot extract video frames.")
+
+    pdir = project_dir(project_id)
+    pdir.mkdir(parents=True, exist_ok=True)
+    raw = pdir / f"flight_video{Path(video.filename or 'video.mp4').suffix or '.mp4'}"
+    raw.write_bytes(await video.read())
+
+    dest = pdir / "images"
+    dest.mkdir(parents=True, exist_ok=True)
+    # Clear any prior frames so re-uploads don't mix old + new.
+    for old in dest.glob("frame_*.jpg"):
+        old.unlink()
+
+    pattern = str(dest / "frame_%05d.jpg")
+    cmd = ["ffmpeg", "-y", "-i", str(raw), "-vf", f"fps={fps}", "-q:v", "2", pattern]
+    proc = subprocess.run(cmd, capture_output=True, text=True)
+    if proc.returncode != 0:
+        raise WebODMError(f"Video frame extraction failed: {(proc.stderr or '')[-400:]}")
+
+    frames = sorted(str(p) for p in dest.glob("frame_*.jpg"))
+    if not frames:
+        raise WebODMError("No frames could be extracted from that video.")
+    logger.info("Extracted %d frames (%.1f fps) from video for project %s", len(frames), fps, project_id)
+    return frames
+
+
 def get_task_status(webodm_project_id: int, task_uuid: str) -> str:
     """Convenience used by the project status endpoint."""
     try:

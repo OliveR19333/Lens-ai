@@ -130,6 +130,19 @@ export async function uploadImages(projectId, files) {
   return data
 }
 
+// Upload a flight video; the server extracts frames at `fps` for processing.
+// Videos are large, so allow a long upload window before timing out.
+export async function uploadVideo(projectId, file, fps = 1) {
+  const form = new FormData()
+  form.append('video', file)
+  form.append('fps', String(fps))
+  const { data } = await api.post(`/project/${projectId}/upload-video`, form, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+    timeout: 1000 * 60 * 20
+  })
+  return data
+}
+
 export async function projectStatus(projectId) {
   const { data } = await api.get(`/project/${projectId}/status`)
   return data

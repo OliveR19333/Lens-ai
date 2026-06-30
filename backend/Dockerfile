@@ -1,8 +1,10 @@
 FROM python:3.11-slim
 
-# System deps for geopandas/rasterio/shapely (GDAL/GEOS/PROJ) and psycopg2.
+# System deps for geopandas/rasterio/shapely (GDAL/GEOS/PROJ) and psycopg2,
+# plus ffmpeg for extracting still frames from uploaded flight videos.
 RUN apt-get update && apt-get install -y --no-install-recommends \
         gdal-bin libgdal-dev libgeos-dev libproj-dev \
+        ffmpeg \
         build-essential \
     && rm -rf /var/lib/apt/lists/*
 
