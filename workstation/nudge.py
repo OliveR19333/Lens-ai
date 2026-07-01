@@ -43,7 +43,9 @@ def nudge(east_ft, north_ft):
     ctn = to_tn.transform(c)
     sh = back.transform(QgsPointXY(ctn.x() + east_ft, ctn.y() + north_ft))
     ddx, ddy = sh.x() - c.x(), sh.y() - c.y()
-    ds = gdal.Open(path, gdal.GA_Update)
+    # The ortho is a Cloud-Optimized GeoTIFF; allow the in-place georef edit.
+    ds = gdal.OpenEx(path, gdal.OF_UPDATE | gdal.OF_RASTER,
+                     open_options=["IGNORE_COG_LAYOUT_BREAK=YES"])
     if ds is None:
         print("Could not open the file to edit:", path)
         return
