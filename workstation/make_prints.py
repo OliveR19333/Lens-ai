@@ -88,7 +88,9 @@ def _page(lay, name):
         print("(page size:", e, ")")
 
 
-def make_prints(folder):
+def make_prints(folder, grid_div=4, bg_opacity=0.35):
+    """grid_div: grid squares per inch (higher = finer grid).
+    bg_opacity: 0-1 background aerial opacity (lower = more see-through)."""
     folder = os.path.expanduser(folder)
     mapdir = os.path.join(folder, "map")
     op = os.path.join(mapdir, "orthophoto.tif")
@@ -99,12 +101,14 @@ def make_prints(folder):
 
     ortho = QgsRasterLayer(op, "Orthophoto")
     proj.addMapLayer(ortho, False)
-    # Desaturate to grayscale for the B/W engineering look.
+    # Desaturate to grayscale and fade it back so it's a light backdrop.
     try:
         hs = QgsHueSaturationFilter(); hs.setSaturation(-100)
-        ortho.pipe().set(hs); ortho.triggerRepaint()
+        ortho.pipe().set(hs)
+        ortho.renderer().setOpacity(bg_opacity)
+        ortho.triggerRepaint()
     except Exception as e:  # noqa: BLE001
-        print("(grayscale skipped:", e, ")")
+        print("(grayscale/opacity skipped:", e, ")")
 
     tr = QgsCoordinateTransform(ortho.crs(), TN, proj)
     ext = tr.transformBoundingBox(ortho.extent())
@@ -120,7 +124,7 @@ def make_prints(folder):
     lay1 = QgsPrintLayout(proj); _page(lay1, "Site Plan")
     m1 = _map(lay1, [x for x in (parcels, ortho) if x], ext, ftin)
     g = m1.grid(); g.setEnabled(True)
-    g.setIntervalX(ftin); g.setIntervalY(ftin)   # 1 grid square = 1 inch on paper
+    g.setIntervalX(ftin / grid_div); g.setIntervalY(ftin / grid_div)
     try:
         g.setLineSymbol(QgsLineSymbol.createSimple({"color": "0,0,0,180", "width": "0.15"}))
     except Exception:
