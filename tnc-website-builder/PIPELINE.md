@@ -48,9 +48,10 @@ Store everything in `assets/` with a `manifest.json` mapping asset → section.
   `src/components/`, then customized to the brand — we own the code).
 - Wire animations with **Anime.js v4**: entrance timelines, scroll-triggered
   reveals, hover states. Use `createLayout()` for layout transitions.
-- **3D tier only:** build the scene in React Three Fiber + drei, drive camera
-  and material animation through Anime.js' three.js adapter, lazy-load the
-  scene, and always ship a static-image fallback for low-power devices.
+- **3D tier only:** build to [3D-DESIGN-STANDARD.md](3D-DESIGN-STANDARD.md) —
+  scroll-first with one hero 3D moment, R3F + drei scene driven by the GSAP
+  ScrollTrigger rig, models sourced per the standard's hub order, hard mobile
+  budgets enforced, lazy-loaded with a static-image fallback.
 
 **Gate:** every page matches the approved concept board; Lighthouse
 performance ≥ 90 mobile (≥ 80 for 3D tier with the fallback path verified).

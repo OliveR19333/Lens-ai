@@ -26,6 +26,7 @@ The fixed toolbox for every TNC build. All open source unless noted.
 | React Three Fiber | [pmndrs/react-three-fiber](https://github.com/pmndrs/react-three-fiber) | React renderer for three.js |
 | drei | [pmndrs/drei](https://github.com/pmndrs/drei) | R3F helpers: cameras, controls, loaders, environment, text |
 | Structural reference | [adrianhajdin/3d-portfolio](https://github.com/adrianhajdin/3d-portfolio), [adrianhajdin/project_3D_developer_portfolio](https://github.com/adrianhajdin/project_3D_developer_portfolio) | Proven R3F + GSAP site structures to adapt (never ship as-is) |
+| 3D assets & taste rules | [3D-DESIGN-STANDARD.md](3D-DESIGN-STANDARD.md) | Hub sourcing order (Poly Haven → pmndrs market → Sketchfab → `generate_3d`), scroll rig spec, mobile budgets |
 
 ## Visual editor (optional, for client self-service later)
 

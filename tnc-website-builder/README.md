@@ -13,6 +13,7 @@ so quality is repeatable and delivery is fast.
 | [STACK.md](STACK.md) | The vetted tool stack: component libraries, animation, 3D, builders |
 | [3D-DESIGN-STANDARD.md](3D-DESIGN-STANDARD.md) | The premium 3D standard: scroll-first taste rules, model hubs, mobile performance budget |
 | [GAPS-AND-ROADMAP.md](GAPS-AND-ROADMAP.md) | Honest gap analysis and the phased roadmap to close it |
+| [handoff/START-HERE.md](handoff/START-HERE.md) | **Next session starts here** — project state snapshot + go-live runbook |
 | [INTAKE.md](INTAKE.md) | Client intake questionnaire — fill this out before any build starts |
 
 ## The short version
