@@ -64,7 +64,8 @@ TNC owns the full stack as a service; clients never touch infrastructure.
 
 | Layer | Choice | Why |
 |---|---|---|
-| Domain registrar | **Cloudflare Registrar** (TNC account holds all client domains) | Wholesale pricing, no renewal hikes, free enterprise DNS, every client domain + SSL + CDN in one dashboard. Backup: Porkbun. Avoid GoDaddy. |
+| Domain registrar | **Cloudflare Registrar** (TNC account holds all client domains) | Wholesale pricing, no renewal hikes, free enterprise DNS, every client domain + SSL + CDN in one dashboard. Avoid GoDaddy. |
+| Domain automation | Cloudflare Registrar API (beta, Apr 2026) primary; **Porkbun API v3** fallback | Cloudflare API: availability check + register programmatically, limited TLD set for now (renewals/transfers still dashboard). Porkbun v3 covers more TLDs (register via API → point nameservers to Cloudflare so management stays in one dashboard). |
 | Production hosting | **Cloudflare Pages/Workers** (TNC account) | ~$0–5/site, one-click domain connection since DNS is already in Cloudflare, automatic SSL |
 | Build previews | Higgsfield `deploy_website` | Instant preview URLs during the build phase |
 | Code | TNC GitHub org, one private repo per client | Every update versioned and reversible |
