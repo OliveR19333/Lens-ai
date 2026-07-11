@@ -13,10 +13,18 @@ Higgsfield credits (~$1–5 per finished tour).
 ```bash
 brew install ffmpeg
 npx re-walkthrough-pro install
+npx ugc-factory install        # optional: richer cinematic prompts + UGC ads later
 claude mcp add apify --env APIFY_TOKEN=<token> -- npx -y @apify/actors-mcp-server
 # Higgsfield MCP: follow https://higgsfield.ai/mcp
 ```
 Keys live in a password manager, never in this vault.
+
+## Related open-source skills (same Apify + Higgsfield accounts, all MIT)
+- `re-walkthrough-pro` — the product: listing → sellable tour (this playbook)
+- `ugc-factory` — AI UGC ad studio + the 15 Seedance style skills
+- `advertising-ops` — "CMO in a box": scrapes winning Meta ads, generates
+  aligned ad copy. Install LATER — only once tours are actually selling.
+All at github.com/charlesdove977, installable via `npx <name> install`.
 
 ## Per-tour run
 1. Open Claude Code, run `/re-walkthrough-pro`
