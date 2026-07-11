@@ -1,0 +1,22 @@
+# Netlify build config — serve the PWA (lives in pwa/) for deploy previews.
+# Without this, Netlify would publish the repo root, which has no app.
+
+[build]
+  base = "pwa"
+  command = "npm run build"
+  publish = "dist"
+
+[build.environment]
+  NODE_VERSION = "20"
+
+# SPA fallback so React Router deep links (e.g. /new, /settings) resolve to the
+# app shell instead of 404ing.
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
+
+# NOTE: a deploy preview has no backend, so API calls (login, geocode, render)
+# won't succeed there — set VITE_API_BASE_URL to a reachable backend (e.g. a
+# Cloudflare Tunnel to the Mac) for a fully working hosted PWA. The preview is
+# still useful for UI/offline-shell review.

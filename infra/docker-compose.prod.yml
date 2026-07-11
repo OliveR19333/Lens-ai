@@ -1,0 +1,104 @@
+# GAS Property Mapping System — production stack (spec §13.3).
+#
+#   DOMAIN=mapping.example.com docker compose -f docker-compose.prod.yml up -d --build
+#
+# Brings up Postgres/PostGIS, Redis, the FastAPI backend, Celery worker + beat,
+# and a Caddy edge that serves the installable PWA with automatic HTTPS and
+# proxies /api to the backend. Point DOMAIN's DNS A record at this host first.
+
+services:
+  db:
+    image: postgis/postgis:15-3.4
+    environment:
+      POSTGRES_USER: gas
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-gas}
+      POSTGRES_DB: gas_mapping
+    volumes:
+      - db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U gas -d gas_mapping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+
+  backend:
+    build: ../backend
+    env_file: ../backend/.env
+    environment:
+      DATABASE_URL: postgresql+psycopg2://gas:${POSTGRES_PASSWORD:-gas}@db:5432/gas_mapping
+      CELERY_BROKER_URL: redis://redis:6379/0
+      CELERY_RESULT_BACKEND: redis://redis:6379/1
+      # Reach a WebODM running on the host (see infra/setup-webodm.sh).
+      WEBODM_BASE_URL: ${WEBODM_BASE_URL:-http://host.docker.internal:8000/api}
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    volumes:
+      - backend_storage:/app/storage
+      - backend_data:/app/data
+      - ./models:/app/models:ro
+      - ./imports:/imports
+    restart: unless-stopped
+
+  worker:
+    build: ../backend
+    command: celery -A app.workers.celery_app worker --loglevel=info
+    env_file: ../backend/.env
+    environment:
+      DATABASE_URL: postgresql+psycopg2://gas:${POSTGRES_PASSWORD:-gas}@db:5432/gas_mapping
+      CELERY_BROKER_URL: redis://redis:6379/0
+      CELERY_RESULT_BACKEND: redis://redis:6379/1
+      WEBODM_BASE_URL: ${WEBODM_BASE_URL:-http://host.docker.internal:8000/api}
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    depends_on:
+      - db
+      - redis
+    volumes:
+      - backend_storage:/app/storage
+      - backend_data:/app/data
+      - ./models:/app/models:ro
+    restart: unless-stopped
+
+  beat:
+    build: ../backend
+    command: celery -A app.workers.celery_app beat --loglevel=info
+    env_file: ../backend/.env
+    environment:
+      CELERY_BROKER_URL: redis://redis:6379/0
+      CELERY_RESULT_BACKEND: redis://redis:6379/1
+    depends_on:
+      - redis
+    restart: unless-stopped
+
+  web:
+    build:
+      context: ..
+      dockerfile: pwa/Dockerfile
+    environment:
+      DOMAIN: ${DOMAIN:-localhost}
+    ports:
+      - "80:80"
+      - "443:443"
+    depends_on:
+      - backend
+    volumes:
+      - caddy_data:/data
+      - caddy_config:/config
+    restart: unless-stopped
+
+volumes:
+  db_data:
+  backend_storage:
+  backend_data:
+  caddy_data:
+  caddy_config:

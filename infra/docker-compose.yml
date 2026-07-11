@@ -1,0 +1,82 @@
+# GAS Property Mapping System — local full-stack (spec §13.3).
+#
+#   docker compose up -d
+#
+# Brings up PostgreSQL+PostGIS, Redis (Celery broker), the FastAPI backend, a
+# Celery worker + beat scheduler, and a placeholder for WebODM. The PWA runs
+# separately (cd ../pwa && npm run dev) or behind a Cloudflare Tunnel for the
+# HTTPS the iPhone install requires (spec §13.3 note).
+
+services:
+  db:
+    image: postgis/postgis:15-3.4
+    environment:
+      POSTGRES_USER: gas
+      POSTGRES_PASSWORD: gas
+      POSTGRES_DB: gas_mapping
+    ports:
+      - "5432:5432"
+    volumes:
+      - db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U gas -d gas_mapping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+
+  backend:
+    build: ../backend
+    env_file: ../backend/.env
+    environment:
+      DATABASE_URL: postgresql+psycopg2://gas:gas@db:5432/gas_mapping
+      CELERY_BROKER_URL: redis://redis:6379/0
+      CELERY_RESULT_BACKEND: redis://redis:6379/1
+    ports:
+      - "8080:8080"
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    volumes:
+      - backend_storage:/app/storage
+
+  worker:
+    build: ../backend
+    command: celery -A app.workers.celery_app worker --loglevel=info
+    env_file: ../backend/.env
+    environment:
+      DATABASE_URL: postgresql+psycopg2://gas:gas@db:5432/gas_mapping
+      CELERY_BROKER_URL: redis://redis:6379/0
+      CELERY_RESULT_BACKEND: redis://redis:6379/1
+    depends_on:
+      - db
+      - redis
+    volumes:
+      - backend_storage:/app/storage
+
+  beat:
+    build: ../backend
+    command: celery -A app.workers.celery_app beat --loglevel=info
+    env_file: ../backend/.env
+    environment:
+      CELERY_BROKER_URL: redis://redis:6379/0
+      CELERY_RESULT_BACKEND: redis://redis:6379/1
+    depends_on:
+      - redis
+
+  # WebODM is a large multi-container app of its own (spec §7.1). Run it from its
+  # official compose (https://github.com/OpenDroneMap/WebODM) and point
+  # WEBODM_BASE_URL at it. Placeholder kept here for documentation.
+  # webodm:
+  #   image: opendronemap/webodm
+  #   ports: ["8000:8000"]
+
+volumes:
+  db_data:
+  backend_storage:

@@ -1,0 +1,48 @@
+# ---- Python / backend ----
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+env/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+*.db
+*.sqlite3
+
+# ---- Node / PWA ----
+node_modules/
+pwa/dist/
+dist/
+.vite/
+*.local
+
+# ---- Secrets / env ----
+.env
+.env.*
+!.env.example
+*.pem
+
+# ---- Generated artifacts ----
+storage/
+data/parcels/*.geojson
+data/parcels/*.shp
+data/tiles/
+*.tif
+*.tiff
+*.kmz
+*.pdf
+!docs/**/*.pdf
+
+# ---- ML model weights (large; fetched per-deploy) ----
+*.pt
+*.onnx
+*.engine
+
+# ---- OS / editor ----
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.swp
