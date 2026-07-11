@@ -5,12 +5,15 @@
 > July 2026). That plan governs: five public wings, /vendors + /brief +
 > /care sections, revenue architecture, and the infra decision —
 > **one VPS running Coolify (+ Plausible, Listmonk, Ghost, Cal.com, n8n)**
-> hosting tncgas.com and all client sites. Consequence here: the proposal
-> portal + QC dashboard deploy to **Coolify on the VPS, not Railway**
-> (Railway was superseded by the master plan). The render rig (homelab/)
-> is unchanged — it's the production engine behind the drone-media wing
-> and pairs with the outreach engine (tnc-outreach-engine.zip) and trend
-> watcher (tnc-trend-watcher.zip) scaffolds in Drive.
+> hosting the server suite. **Reconciled hosting decision (with PR #3):**
+> hybrid — Cloudflare Registrar + Pages serves all static sites (client
+> sites + TNC site); the Coolify VPS runs everything with a backend
+> (Plausible, Listmonk, Ghost, n8n, the proposal portal + QC dashboard,
+> trend-watcher cron). Railway is superseded. The render rig (homelab/)
+> is unchanged — the production engine behind the drone-media wing.
+> Sibling project: **PR #3** (`tnc-website-builder/`) — the website
+> service playbook + go-live runbook; its handoff docs cross-reference
+> this file. Merge BOTH PRs so main shows the whole estate.
 
 Living checklist for the full TNC stack build. Everything marked DONE is
 committed on this branch (PR #2). Resume point for any future session:
