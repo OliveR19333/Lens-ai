@@ -38,6 +38,15 @@ hybrid property tours, social shorts, captioned pitch videos.
   http://127.0.0.1:19789/mcp when the app is open) for review and manual
   polish. The rig automates; Palmier is where taste gets applied.
 
+## Existing assets — reuse, never rebuild
+Ryan's pre-built editing system lives in Google Drive (map:
+vault/40-Playbooks/drive-asset-map.md): a DaVinci Resolve script suite
+(beat detection, DRX grade ripple, multi-format render), a .cube LUT
+library, project folder templates, and the longform estate-film workflow
+(vault/40-Playbooks/longform-estate-film.md). For graded hero work, drive
+Resolve + those scripts via the DaVinci MCP rather than re-implementing
+in ffmpeg.
+
 ## Formats this skill produces
 1. **Hybrid tour** (the premium product): real FPV/aerial exterior + AI
    interior clips, stitched into one seamless walkthrough.

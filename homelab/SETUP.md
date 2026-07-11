@@ -96,6 +96,12 @@ git clone https://github.com/Bomx/super-video-maker-skill ~/work/super-video-mak
 
 # Drop your D-log conversion LUT (.cube) into ~/work/luts/
 mkdir -p ~/work/luts
+
+# Pull your existing editing assets down from Google Drive (one-time
+# `rclone config` to add the gdrive remote, then):
+sudo apt-get install -y rclone
+rclone copy gdrive:LUT ~/work/luts --include "*.cube"
+rclone copy gdrive:Project_Template ~/work/project-template
 ```
 
 ## Troubleshooting
