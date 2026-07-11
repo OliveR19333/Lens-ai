@@ -13,6 +13,8 @@ Copy this file into the client's project folder and complete it together.
 ## Tier & scope
 
 - **Tier:** ☐ Standard ☐ Motion ☐ 3D Premium
+- **Service model:** ☐ TNC Membership (default — pitch this first)
+  ☐ One-time buildout (premium price quoted, membership pitch given: ☐)
 - **Pages/sections needed:**
 - **Add-ons:**
 - **Deadline:**

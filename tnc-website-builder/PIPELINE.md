@@ -74,9 +74,17 @@ viewport; everything else supports it.
 
 ## Phase 7 — Launch (TNC-managed, no handoff)
 
-TNC builds AND maintains — the client never touches infrastructure. All
-client repos live in TNC's GitHub, hosting runs under TNC's accounts, and
-domains sit in TNC's registrar.
+Default path — applies to membership clients (nearly everyone). TNC builds
+AND maintains — the client never touches infrastructure. All client repos
+live in TNC's GitHub, hosting runs under TNC's accounts, and domains sit in
+TNC's registrar.
+
+> **One-time buildout exception:** if the client bought the standalone
+> option (see CLIENT-OPTIONS.md — premium-priced, discouraged), skip Phase 8:
+> deploy to hosting in the client's own accounts, transfer/point their
+> domain, and deliver a handoff doc (live URL, account credentials they own,
+> asset files, "how to request paid changes"). Their intake still gets
+> archived — buyout clients are conversion leads for membership later.
 
 1. **Domain:** register (or transfer) the client's domain into TNC's
    Cloudflare account. Cloudflare Registrar sells at wholesale cost with

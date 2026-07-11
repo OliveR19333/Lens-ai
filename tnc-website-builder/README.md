@@ -15,7 +15,9 @@ so quality is repeatable and delivery is fast.
 
 ## The short version
 
-1. **Client picks a tier** — Standard, Motion, or 3D Premium (see CLIENT-OPTIONS.md).
+1. **Client picks a tier and service model** — Standard, Motion, or 3D
+   Premium, sold as a TNC Service Membership by default; a premium-priced
+   one-time buildout exists for clients who insist (see CLIENT-OPTIONS.md).
 2. **Intake** — brand, goals, references, content (see INTAKE.md).
 3. **Build** — React site assembled from React Bits components, animated with
    Anime.js / GSAP, 3D scenes via React Three Fiber when the tier calls for it.

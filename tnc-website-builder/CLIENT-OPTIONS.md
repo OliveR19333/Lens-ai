@@ -41,15 +41,39 @@ The flagship. A high-end 3D experience in the browser.
 - **Best for:** premium brands, real estate, automotive, tech products,
   portfolios that need to win attention
 
-## Included with every tier — TNC management (monthly)
+## Two ways to buy — membership is the default
 
-Every site is a managed service, not a one-time build:
+### TNC Service Membership (the way we sell it)
+
+Every tier is offered first as a managed membership. The site is only half
+the product — the membership is the other half:
 
 - Domain registration/renewal and DNS (TNC-managed Cloudflare)
 - Hosting, SSL, and uptime
 - SEO management: Search Console, sitemaps, meta/schema, ranking reports
-- Content and design updates on request
+- Content and design updates on request — text us a change, it ships
 - Analytics reporting
+- **Member discount on all other TNC services** (launch videos, imagery
+  drops, campaigns, additional pages/sites)
+- Lower upfront build price than the one-time option
+
+### One-time standalone buildout (available, not encouraged)
+
+For the customer who insists on a one-time setup. Sold at a **premium
+upfront price** (rule of thumb: build price + roughly a year of membership
+value), because TNC's ongoing revenue isn't in the deal:
+
+- Full custom build per the same pipeline and tier
+- Delivered to hosting/domain in the client's own accounts, with a handoff
+  doc — after delivery, updates/SEO/support are not included
+- No member discounts; future change requests billed at full project rates
+- Standard rebuttal when quoted: "Most clients choose membership — the site
+  launches cheaper, stays updated, ranks better, and you never think about
+  hosting or domains. The one-time price is higher because you're buying
+  out the service."
+
+A buyout client can convert to membership later — migration of their site
+into TNC management is a paid onboarding.
 
 ## Add-ons (any tier)
 
