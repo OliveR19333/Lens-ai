@@ -27,7 +27,16 @@ hybrid property tours, social shorts, captioned pitch videos.
   fall back to the ffmpeg crop recipe below.
 - **Captions** → Whisper locally on the rig if available, else ask before
   using a paid API.
+- **Music beds** → licensed tracks from `~/work/soundtracks/` first (Artlist/
+  Epidemic downloads — licensing already covered). Generated fallback:
+  Higgsfield `generate_audio` or ElevenLabs MCP `compose_music`.
+- **Sound effects** (whooshes for FPV cuts, ambience) → ElevenLabs MCP
+  `text_to_sound_effects`, else Higgsfield `generate_audio`.
 - **Avatars** → don't. Real footage and Ryan's real face are the brand.
+- **Human finishing** → for hero deliverables, hand the assembled timeline to
+  Palmier on the Mac (open-source editor with an MCP at
+  http://127.0.0.1:19789/mcp when the app is open) for review and manual
+  polish. The rig automates; Palmier is where taste gets applied.
 
 ## Formats this skill produces
 1. **Hybrid tour** (the premium product): real FPV/aerial exterior + AI
