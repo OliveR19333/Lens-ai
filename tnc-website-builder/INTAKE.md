@@ -43,8 +43,8 @@ Copy this file into the client's project folder and complete it together.
 
 ## Technical
 
-- **Domain:** ☐ owns one (which: ) ☐ needs one ☐ subdomain fine
-- **Hosting:** ☐ TNC-managed (default) ☐ client's own infra
+- **Domain:** ☐ owns one — transfer to TNC management (which: ) ☐ TNC registers new one (desired name: )
+- **Hosting & management:** TNC-managed (all tiers — hosting, SSL, SEO, updates included monthly)
 - **Email/booking/forms integrations needed:**
 - **Analytics wanted:** ☐
 

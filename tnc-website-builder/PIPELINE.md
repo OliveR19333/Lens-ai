@@ -72,23 +72,36 @@ viewport; everything else supports it.
 
 **Gate:** share the URL in a chat app — the preview card must look right.
 
-## Phase 7 — Deploy & handoff
+## Phase 7 — Launch (TNC-managed, no handoff)
 
-Two deployment paths — pick per client:
+TNC builds AND maintains — the client never touches infrastructure. All
+client repos live in TNC's GitHub, hosting runs under TNC's accounts, and
+domains sit in TNC's registrar.
 
-1. **Higgsfield-hosted (default, fastest):** `create_website` with
-   `type: "website"` and a memorable subdomain → build → `deploy_website`.
-   Client site is an SSR Cloudflare Worker with zero Higgsfield branding.
-   Custom domain pointed via CNAME.
-2. **Client-owned infra:** push the repo to the client's GitHub, deploy to
-   Vercel/Netlify/Railway. Use when the client requires ownership or has
-   backend needs beyond a brochure site.
+1. **Domain:** register (or transfer) the client's domain into TNC's
+   Cloudflare account. Cloudflare Registrar sells at wholesale cost with
+   free enterprise DNS — one dashboard for every client domain, SSL, and CDN.
+2. **Production hosting:** deploy to Cloudflare Pages/Workers under the TNC
+   account and connect the domain (one click, automatic SSL). Higgsfield
+   `deploy_website` is the rapid-preview path during the build; production
+   lives on TNC-controlled infra.
+3. **SEO baseline:** submit the sitemap to Google Search Console (TNC-owned
+   property), verify indexing, confirm meta/schema, wire analytics.
 
-Handoff kit: live URL, repo access, asset manifest, 1-page "how to request
-changes" doc.
+**Gate:** client sign-off on the live URL at their domain. Archive the intake
++ concept board into the project folder for the portfolio/example library.
 
-**Gate:** client sign-off on the live URL. Archive the intake + concept board
-into the project folder for the portfolio/example library.
+## Phase 8 — Ongoing management (the recurring service)
+
+The monthly service layer every client is on:
+
+- **Updates:** content/design changes on request; changes ship through the
+  same repo + deploy pipeline, so every edit is versioned and reversible.
+- **SEO management:** Search Console monitoring, ranking reports, sitemap and
+  schema upkeep, meta refreshes as content changes.
+- **Fresh assets:** periodic AI imagery/motion drops via Higgsfield to keep
+  the site current (seasonal, promotional).
+- **Operations:** uptime, SSL and domain renewals, analytics reporting.
 
 ## After every launch
 

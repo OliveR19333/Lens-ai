@@ -57,3 +57,15 @@ Rule from the Higgsfield flow: `type: "website"` builds must have a fully
 independent brand and cannot include AI-generation features in the shipped
 site itself (generation is a build-time tool for us, not a runtime feature
 for site visitors). Sites that need runtime generation are `type: "app"`.
+
+## Domains & production hosting — TNC-managed
+
+TNC owns the full stack as a service; clients never touch infrastructure.
+
+| Layer | Choice | Why |
+|---|---|---|
+| Domain registrar | **Cloudflare Registrar** (TNC account holds all client domains) | Wholesale pricing, no renewal hikes, free enterprise DNS, every client domain + SSL + CDN in one dashboard. Backup: Porkbun. Avoid GoDaddy. |
+| Production hosting | **Cloudflare Pages/Workers** (TNC account) | ~$0–5/site, one-click domain connection since DNS is already in Cloudflare, automatic SSL |
+| Build previews | Higgsfield `deploy_website` | Instant preview URLs during the build phase |
+| Code | TNC GitHub org, one private repo per client | Every update versioned and reversible |
+| SEO ops | Google Search Console (TNC-owned properties) + analytics | Sitemap submission, indexing, ranking reports as part of the monthly service |

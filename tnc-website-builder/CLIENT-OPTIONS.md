@@ -41,12 +41,22 @@ The flagship. A high-end 3D experience in the browser.
 - **Best for:** premium brands, real estate, automotive, tech products,
   portfolios that need to win attention
 
+## Included with every tier — TNC management (monthly)
+
+Every site is a managed service, not a one-time build:
+
+- Domain registration/renewal and DNS (TNC-managed Cloudflare)
+- Hosting, SSL, and uptime
+- SEO management: Search Console, sitemaps, meta/schema, ranking reports
+- Content and design updates on request
+- Analytics reporting
+
 ## Add-ons (any tier)
 
 - Short-form launch video for socials (Higgsfield shorts studio)
 - Brand voiceover / audio branding (`generate_audio`)
 - Extra pages, blog setup, booking/contact integrations, e-commerce
-- Monthly care plan: content updates, new imagery drops, seasonal refreshes
+- Premium refresh plan: scheduled new imagery drops, seasonal campaigns
 
 ## Example gallery
 

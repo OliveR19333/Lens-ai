@@ -22,9 +22,11 @@ so quality is repeatable and delivery is fast.
 4. **Assets** — hero images, brand imagery, short motion loops, and 3D meshes
    generated through the Higgsfield MCP (`generate_image`, `generate_video`,
    `generate_3d`).
-5. **Deploy** — through Higgsfield's website pipeline (`create_website` with
-   `type: "website"` → SSR Cloudflare Worker at its own subdomain), or to the
-   client's own hosting (Vercel/Netlify/Railway) when they need to own the infra.
+5. **Launch & manage** — TNC-managed end to end: domain in TNC's Cloudflare
+   Registrar, production on Cloudflare Pages/Workers under TNC's account
+   (Higgsfield `deploy_website` for rapid previews during the build), then
+   the ongoing monthly service — updates, SEO management, fresh assets,
+   renewals. No handoff; TNC builds and maintains.
 
 ## Why this stack
 
