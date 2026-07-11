@@ -1,5 +1,17 @@
 # TNC Build Roadmap — state + next actions
 
+> **Master context:** this roadmap is the media/agentic slice of the
+> **TNC MASTER BUILD PLAN v2** (Google Doc "TNC MASTER BUILD PLAN — v2",
+> July 2026). That plan governs: five public wings, /vendors + /brief +
+> /care sections, revenue architecture, and the infra decision —
+> **one VPS running Coolify (+ Plausible, Listmonk, Ghost, Cal.com, n8n)**
+> hosting tncgas.com and all client sites. Consequence here: the proposal
+> portal + QC dashboard deploy to **Coolify on the VPS, not Railway**
+> (Railway was superseded by the master plan). The render rig (homelab/)
+> is unchanged — it's the production engine behind the drone-media wing
+> and pairs with the outreach engine (tnc-outreach-engine.zip) and trend
+> watcher (tnc-trend-watcher.zip) scaffolds in Drive.
+
 Living checklist for the full TNC stack build. Everything marked DONE is
 committed on this branch (PR #2). Resume point for any future session:
 read this file first, then vault playbooks in `claude-os-starter/vault/`.
