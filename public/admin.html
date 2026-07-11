@@ -1,0 +1,223 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Proposal Admin</title>
+<style>
+  :root { --bg:#0e0f12; --card:#17181d; --line:#2a2c33; --text:#eef0f4; --dim:#9aa0ab; --accent:#e8734a; }
+  * { box-sizing:border-box; margin:0; }
+  body { background:var(--bg); color:var(--text);
+         font:15px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+  .wrap { max-width:860px; margin:0 auto; padding:26px 18px 80px; }
+  h1 { font-size:24px; margin-bottom:4px; }
+  .sub { color:var(--dim); margin-bottom:20px; }
+  .card { background:var(--card); border:1px solid var(--line); border-radius:14px;
+          padding:16px 18px; margin-bottom:14px; }
+  input, textarea { width:100%; background:#101116; border:1px solid var(--line); color:var(--text);
+          border-radius:10px; padding:10px 12px; font:inherit; margin:4px 0 12px; }
+  label { font-size:13px; color:var(--dim); }
+  button { background:var(--accent); border:0; color:#fff; font-weight:650;
+           padding:10px 18px; border-radius:10px; cursor:pointer; font-size:14px; }
+  button.ghost { background:transparent; border:1px solid var(--line); color:var(--text); }
+  button.small { padding:6px 12px; font-size:13px; }
+  .row { display:flex; gap:10px; flex-wrap:wrap; align-items:center; }
+  .item { border:1px dashed var(--line); border-radius:12px; padding:12px; margin-bottom:12px; }
+  .grid2 { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+  .imgslot { border:1px solid var(--line); border-radius:10px; padding:8px; text-align:center; }
+  .imgslot img { max-width:100%; max-height:110px; border-radius:8px; display:block; margin:0 auto 6px; }
+  .imgslot .hint { font-size:12px; color:var(--dim); margin-bottom:6px; }
+  .plist .card { cursor:default; }
+  .badge { display:inline-block; font-size:12px; padding:3px 10px; border-radius:20px;
+           background:#233828; color:#7ee2a0; }
+  .badge.wait { background:#332a1c; color:#e2c37e; }
+  a { color:#7db4ff; word-break:break-all; }
+  .subm { margin-top:8px; padding:10px; background:#101116; border-radius:10px; font-size:14px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Proposal Admin</h1>
+  <div class="sub">Create interactive proposals. Clients toggle options, you get their selection back.</div>
+
+  <div class="card" id="keycard">
+    <label>Admin key (set via ADMIN_KEY env var on the server)</label>
+    <input id="key" type="password" placeholder="admin key">
+    <button onclick="saveKey()">Unlock</button>
+  </div>
+
+  <div id="main" hidden>
+    <div class="card">
+      <h3 style="margin-bottom:10px" id="formtitle">New proposal</h3>
+      <input id="pid" type="hidden">
+      <label>Client name</label><input id="clientName" placeholder="Jane Smith — Smith Realty">
+      <label>Project name</label><input id="projectName" placeholder="Listing media package — 17 Zelma Dr">
+      <label>Intro (optional)</label><textarea id="intro" placeholder="A short personal note at the top of the proposal…"></textarea>
+      <div id="items"></div>
+      <div class="row">
+        <button class="ghost" onclick="addItem()">+ Add line item</button>
+        <button onclick="save()">Save proposal</button>
+        <button class="ghost" onclick="resetForm()">Clear</button>
+      </div>
+    </div>
+    <h3 style="margin:20px 0 10px">Your proposals</h3>
+    <div class="plist" id="plist"></div>
+  </div>
+</div>
+
+<template id="itemT">
+  <div class="item">
+    <div class="grid2">
+      <div><label>Service name</label><input class="i-name" placeholder="Cinematic walkthrough video"></div>
+      <div><label>Price ($)</label><input class="i-price" type="number" placeholder="500"></div>
+    </div>
+    <label>Description</label><input class="i-desc" placeholder="60–90s room-by-room cinematic tour, 16:9 + vertical cut">
+    <label>What they lose if they skip it (shown when toggled off)</label>
+    <input class="i-roi" placeholder="Listings with video get 4x more inquiries — skipping this drops reach significantly">
+    <div class="grid2">
+      <div class="imgslot">
+        <div class="hint">BEFORE image (shown when OFF)</div>
+        <img class="i-before-img" hidden>
+        <input type="file" class="i-before" accept="image/*">
+      </div>
+      <div class="imgslot">
+        <div class="hint">AFTER image (shown when ON)</div>
+        <img class="i-after-img" hidden>
+        <input type="file" class="i-after" accept="image/*">
+      </div>
+    </div>
+    <div class="row" style="margin-top:8px">
+      <label style="display:flex;align-items:center;gap:6px"><input type="checkbox" class="i-req" style="width:auto;margin:0"> Required (client can't toggle off)</label>
+      <button class="ghost small" onclick="this.closest('.item').remove()">Remove</button>
+    </div>
+  </div>
+</template>
+
+<script>
+let KEY = localStorage.getItem('adminKey') || '';
+const H = () => ({ 'Content-Type':'application/json', 'x-admin-key': KEY });
+
+function saveKey() {
+  KEY = document.getElementById('key').value.trim();
+  localStorage.setItem('adminKey', KEY);
+  boot();
+}
+
+async function boot() {
+  const r = await fetch('/api/admin/proposals', { headers: H() });
+  if (!r.ok) { document.getElementById('keycard').hidden = false; document.getElementById('main').hidden = true; return; }
+  document.getElementById('keycard').hidden = true;
+  document.getElementById('main').hidden = false;
+  renderList(await r.json());
+  if (!document.querySelector('#items .item')) addItem();
+}
+
+function addItem(data) {
+  const node = document.getElementById('itemT').content.cloneNode(true);
+  const el = node.querySelector('.item');
+  if (data) {
+    el.dataset.id = data.id;
+    el.querySelector('.i-name').value = data.name;
+    el.querySelector('.i-price').value = data.price;
+    el.querySelector('.i-desc').value = data.desc;
+    el.querySelector('.i-roi').value = data.roi;
+    el.querySelector('.i-req').checked = data.required;
+    setImg(el, 'before', data.beforeImage);
+    setImg(el, 'after', data.afterImage);
+  }
+  ['before','after'].forEach(k => {
+    el.querySelector('.i-' + k).addEventListener('change', async e => {
+      const f = e.target.files[0]; if (!f) return;
+      const dataUrl = await new Promise(res => { const r = new FileReader(); r.onload = () => res(r.result); r.readAsDataURL(f); });
+      const up = await fetch('/api/admin/upload', { method:'POST', headers:H(), body: JSON.stringify({ dataUrl }) });
+      const d = await up.json();
+      if (up.ok) setImg(el, k, d.url); else alert(d.error || 'upload failed');
+    });
+  });
+  document.getElementById('items').appendChild(node);
+}
+
+function setImg(el, k, url) {
+  if (!url) return;
+  const img = el.querySelector('.i-' + k + '-img');
+  img.src = url; img.hidden = false; img.dataset.url = url;
+}
+
+async function save() {
+  const items = [...document.querySelectorAll('#items .item')].map(el => ({
+    id: el.dataset.id,
+    name: el.querySelector('.i-name').value,
+    price: el.querySelector('.i-price').value,
+    desc: el.querySelector('.i-desc').value,
+    roi: el.querySelector('.i-roi').value,
+    required: el.querySelector('.i-req').checked,
+    beforeImage: el.querySelector('.i-before-img').dataset.url || '',
+    afterImage: el.querySelector('.i-after-img').dataset.url || ''
+  })).filter(it => it.name);
+  const body = {
+    id: document.getElementById('pid').value || undefined,
+    clientName: document.getElementById('clientName').value,
+    projectName: document.getElementById('projectName').value,
+    intro: document.getElementById('intro').value,
+    items
+  };
+  const r = await fetch('/api/admin/proposals', { method:'POST', headers:H(), body: JSON.stringify(body) });
+  if (!r.ok) return alert('save failed');
+  resetForm();
+  boot();
+}
+
+function resetForm() {
+  ['pid','clientName','projectName','intro'].forEach(id => document.getElementById(id).value = '');
+  document.getElementById('items').innerHTML = '';
+  document.getElementById('formtitle').textContent = 'New proposal';
+  addItem();
+}
+
+function renderList(list) {
+  const box = document.getElementById('plist');
+  box.innerHTML = list.length ? '' : '<div class="sub">No proposals yet.</div>';
+  list.slice().reverse().forEach(p => {
+    const url = location.origin + '/p/' + p.token;
+    const el = document.createElement('div');
+    el.className = 'card';
+    const chosen = p.submission ? p.items.filter(it => p.submission.selectedIds.includes(it.id)).map(it => it.name).join(', ') : '';
+    el.innerHTML = `
+      <div class="row" style="justify-content:space-between">
+        <div><b>${esc(p.projectName)}</b> — ${esc(p.clientName)}</div>
+        ${p.submission ? '<span class="badge">✔ submitted $' + p.submission.total.toLocaleString() + '</span>'
+                       : '<span class="badge wait">awaiting client</span>'}
+      </div>
+      <div style="margin:6px 0">Client link: <a href="${url}" target="_blank">${url}</a>
+        <button class="ghost small" onclick="navigator.clipboard.writeText('${url}')">Copy</button></div>
+      ${p.submission ? `<div class="subm"><b>They chose:</b> ${esc(chosen)}<br>${p.submission.note ? '<b>Note:</b> ' + esc(p.submission.note) : ''}</div>` : ''}
+      <div class="row" style="margin-top:8px">
+        <button class="ghost small" onclick='edit(${JSON.stringify(p).replace(/'/g, "&#39;")})'>Edit</button>
+        <button class="ghost small" onclick="del('${p.id}')">Delete</button>
+      </div>`;
+    box.appendChild(el);
+  });
+}
+
+function edit(p) {
+  document.getElementById('pid').value = p.id;
+  document.getElementById('clientName').value = p.clientName;
+  document.getElementById('projectName').value = p.projectName;
+  document.getElementById('intro').value = p.intro || '';
+  document.getElementById('formtitle').textContent = 'Edit: ' + p.projectName;
+  document.getElementById('items').innerHTML = '';
+  p.items.forEach(addItem);
+  scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+async function del(id) {
+  if (!confirm('Delete this proposal?')) return;
+  await fetch('/api/admin/proposals/' + id, { method:'DELETE', headers:H() });
+  boot();
+}
+
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+if (KEY) boot();
+</script>
+</body>
+</html>
