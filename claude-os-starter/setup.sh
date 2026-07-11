@@ -29,7 +29,7 @@ fi
 
 # 2. Skills
 mkdir -p "$SKILLS_DIR"
-for skill in brain plan-today; do
+for skill in brain plan-today tnc-video-factory; do
   mkdir -p "$SKILLS_DIR/$skill"
   cp "$HERE/skills/$skill/SKILL.md" "$SKILLS_DIR/$skill/SKILL.md"
   echo "==> Installed skill: /$skill"

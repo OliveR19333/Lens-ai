@@ -88,6 +88,14 @@ claude mcp add apify --env APIFY_TOKEN=<token> -- npx -y @apify/actors-mcp-serve
 # Higgsfield MCP: same setup command you used from higgsfield.ai/mcp
 npx re-walkthrough-pro install
 npx ugc-factory install
+
+# TNC video factory (drone + AI stitching, shorts, captions) — installed by
+# claude-os-starter/setup.sh. Also clone the upstream reference library it
+# consults for advanced recipes:
+git clone https://github.com/Bomx/super-video-maker-skill ~/work/super-video-maker-skill
+
+# Drop your D-log conversion LUT (.cube) into ~/work/luts/
+mkdir -p ~/work/luts
 ```
 
 ## Troubleshooting

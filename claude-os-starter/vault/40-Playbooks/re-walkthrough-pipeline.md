@@ -26,6 +26,10 @@ Keys live in a password manager, never in this vault.
   aligned ad copy. Install LATER — only once tours are actually selling.
 All at github.com/charlesdove977, installable via `npx <name> install`.
 
+## Upsell path
+This playbook is the baseline AI-only tier. The premium tier adds real
+drone footage — see [[drone-hybrid-tour]].
+
 ## Per-tour run
 1. Open Claude Code, run `/re-walkthrough-pro`
 2. Paste the Zillow URL (or ask it to find listings in a zip code)
