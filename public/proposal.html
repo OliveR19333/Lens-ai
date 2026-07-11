@@ -1,0 +1,165 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Your Proposal</title>
+<style>
+  :root { --bg:#0e0f12; --card:#17181d; --line:#2a2c33; --text:#eef0f4; --dim:#9aa0ab;
+          --accent:#e8734a; --on:#3ddc84; }
+  * { box-sizing:border-box; margin:0; }
+  body { background:var(--bg); color:var(--text);
+         font:16px/1.55 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+         padding-bottom:110px; }
+  .wrap { max-width:720px; margin:0 auto; padding:28px 18px; }
+  h1 { font-size:26px; letter-spacing:-.3px; }
+  .sub { color:var(--dim); margin:6px 0 22px; }
+  .intro { background:var(--card); border:1px solid var(--line); border-radius:14px;
+           padding:16px 18px; margin-bottom:22px; white-space:pre-wrap; }
+  .item { background:var(--card); border:1px solid var(--line); border-radius:14px;
+          margin-bottom:16px; overflow:hidden; transition:opacity .2s; }
+  .item.off { opacity:.55; }
+  .imgbox { position:relative; display:none; }
+  .imgbox.has { display:block; }
+  .imgbox img { width:100%; display:block; max-height:340px; object-fit:cover; }
+  .imgtag { position:absolute; top:10px; left:10px; background:rgba(0,0,0,.65);
+            padding:4px 10px; border-radius:20px; font-size:12px; letter-spacing:.4px; }
+  .body { padding:16px 18px; }
+  .row { display:flex; justify-content:space-between; align-items:center; gap:12px; }
+  .name { font-weight:650; font-size:18px; }
+  .price { font-weight:650; white-space:nowrap; }
+  .desc { color:var(--dim); margin-top:6px; font-size:15px; }
+  .lose { display:none; margin-top:10px; padding:10px 12px; border-radius:10px;
+          background:#2a1b16; border:1px solid #4d2c1f; color:#f0a58c; font-size:14px; }
+  .item.off .lose { display:block; }
+  .req { font-size:12px; color:var(--dim); margin-top:8px; }
+  .switch { position:relative; width:52px; height:30px; flex:none; }
+  .switch input { display:none; }
+  .slider { position:absolute; inset:0; border-radius:30px; background:#3a3d46;
+            cursor:pointer; transition:.2s; }
+  .slider:before { content:""; position:absolute; width:24px; height:24px; border-radius:50%;
+                   background:#fff; top:3px; left:3px; transition:.2s; }
+  input:checked + .slider { background:var(--on); }
+  input:checked + .slider:before { transform:translateX(22px); }
+  input:disabled + .slider { opacity:.5; cursor:not-allowed; }
+  .bar { position:fixed; left:0; right:0; bottom:0; background:#111318;
+         border-top:1px solid var(--line); padding:14px 18px; }
+  .barin { max-width:720px; margin:0 auto; display:flex; justify-content:space-between;
+           align-items:center; gap:14px; }
+  .total { font-size:24px; font-weight:700; }
+  .total small { color:var(--dim); font-size:13px; font-weight:400; display:block; }
+  button { background:var(--accent); border:0; color:#fff; font-weight:650; font-size:16px;
+           padding:13px 26px; border-radius:12px; cursor:pointer; }
+  button:disabled { opacity:.6; }
+  textarea { width:100%; background:var(--card); border:1px solid var(--line); color:var(--text);
+             border-radius:12px; padding:12px; font:inherit; margin:6px 0 0; min-height:70px; }
+  .done { text-align:center; padding:60px 20px; }
+  .done h2 { font-size:24px; margin-bottom:10px; }
+</style>
+</head>
+<body>
+<div class="wrap" id="app">Loading your proposal…</div>
+<div class="bar" id="bar" hidden>
+  <div class="barin">
+    <div class="total"><span id="total">$0</span><small id="count"></small></div>
+    <button id="send">Accept &amp; Send</button>
+  </div>
+</div>
+<script>
+const token = location.pathname.split('/').pop();
+const fmt = n => '$' + n.toLocaleString();
+let P = null, on = new Set();
+
+async function load() {
+  const r = await fetch('/api/p/' + token);
+  if (!r.ok) { app.innerHTML = '<h1>Proposal not found</h1>'; return; }
+  P = await r.json();
+  if (P.submitted) return done('This proposal has already been submitted. Thank you!');
+  P.items.forEach(it => on.add(it.id));               // everything on by default
+  render();
+}
+
+function render() {
+  app.innerHTML = `
+    <h1>${esc(P.projectName)}</h1>
+    <div class="sub">Prepared for ${esc(P.clientName)} — toggle any option to see how it changes your project and your total.</div>
+    ${P.intro ? `<div class="intro">${esc(P.intro)}</div>` : ''}
+    <div id="items"></div>
+    <div style="margin-top:20px">
+      <div style="font-weight:650">Anything you'd like to add?</div>
+      <textarea id="note" placeholder="Questions, changes, requests…"></textarea>
+    </div>`;
+  const box = document.getElementById('items');
+  P.items.forEach(it => {
+    const el = document.createElement('div');
+    el.className = 'item';
+    el.id = 'it-' + it.id;
+    el.innerHTML = `
+      <div class="imgbox ${ (it.afterImage||it.beforeImage) ? 'has':'' }">
+        <img alt=""><div class="imgtag"></div>
+      </div>
+      <div class="body">
+        <div class="row">
+          <div class="name">${esc(it.name)}</div>
+          <div style="display:flex;align-items:center;gap:14px">
+            <div class="price">${fmt(it.price)}</div>
+            <label class="switch">
+              <input type="checkbox" checked ${it.required?'disabled':''} data-id="${it.id}">
+              <span class="slider"></span>
+            </label>
+          </div>
+        </div>
+        ${it.desc ? `<div class="desc">${esc(it.desc)}</div>` : ''}
+        ${it.roi ? `<div class="lose">If you skip this: ${esc(it.roi)}</div>` : ''}
+        ${it.required ? `<div class="req">Included in every package</div>` : ''}
+      </div>`;
+    box.appendChild(el);
+    el.querySelector('input').addEventListener('change', e => {
+      e.target.checked ? on.add(it.id) : on.delete(it.id);
+      paint(it);
+      totals();
+    });
+    paint(it);
+  });
+  bar.hidden = false;
+  totals();
+  document.getElementById('send').onclick = submit;
+}
+
+function paint(it) {
+  const el = document.getElementById('it-' + it.id);
+  const active = on.has(it.id);
+  el.classList.toggle('off', !active);
+  const img = el.querySelector('img'), tag = el.querySelector('.imgtag');
+  const src = active ? (it.afterImage || it.beforeImage) : (it.beforeImage || it.afterImage);
+  if (src) { img.src = src; tag.textContent = active ? 'WITH ' + it.name.toUpperCase() : 'WITHOUT'; }
+}
+
+function totals() {
+  const chosen = P.items.filter(it => on.has(it.id));
+  document.getElementById('total').textContent = fmt(chosen.reduce((s,i)=>s+i.price,0));
+  document.getElementById('count').textContent = chosen.length + ' of ' + P.items.length + ' options selected';
+}
+
+async function submit() {
+  const btn = document.getElementById('send');
+  btn.disabled = true; btn.textContent = 'Sending…';
+  const r = await fetch('/api/p/' + token + '/submit', {
+    method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({ selectedIds:[...on], note:document.getElementById('note').value })
+  });
+  const d = await r.json();
+  if (r.ok) done('Your selection was sent — final total ' + fmt(d.total) + '. We\'ll be in touch shortly!');
+  else { btn.disabled = false; btn.textContent = 'Accept & Send'; alert('Something went wrong, try again.'); }
+}
+
+function done(msg) {
+  bar.hidden = true;
+  app.innerHTML = `<div class="done"><h2>✅ Thank you!</h2><p>${esc(msg)}</p></div>`;
+}
+
+const esc = s => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+load();
+</script>
+</body>
+</html>

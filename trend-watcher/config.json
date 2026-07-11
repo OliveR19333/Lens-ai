@@ -1,0 +1,45 @@
+{
+  "_comment": "TNC Trend Watcher config. Two IG business accounts = 60 hashtags/week total. 26-27 locked tags per account + 3-4 flex slots for chasing whatever pops. Edit freely — but remember: once a tag is queried it counts against that account's rolling 7-day window even if removed.",
+
+  "account_1_build_side": {
+    "ig_user_id": "PUT_IG_USER_ID_HERE",
+    "verticals": {
+      "pools": ["pooldesign", "gunitepool", "custompool", "poolconstruction", "luxurypool", "pooldeck"],
+      "hardscape": ["hardscape", "hardscapedesign", "paverpatio", "retainingwall", "outdoorkitchen"],
+      "landscape": ["landscapedesign", "landscaping", "landscapearchitecture", "nativeplants"],
+      "waterscapes": ["waterfeature", "koipond", "backyardwaterfall", "pondlife"],
+      "outdoor_living": ["outdoorliving", "backyardgoals", "firepit", "pergola"],
+      "construction": ["newconstruction", "custrumhomebuilder", "homebuilding"]
+    },
+    "flex_slots": 3
+  },
+
+  "account_2_media_market_side": {
+    "ig_user_id": "PUT_IG_USER_ID_HERE",
+    "verticals": {
+      "drone_media": ["dronephotography", "dronevideography", "fpvdrone", "aerialphotography", "fpvfreestyle", "dronestagram"],
+      "web_design": ["webdesign", "webdesigner", "smallbusinesswebsite"],
+      "str_rentals": ["airbnbdesign", "airbnbhost", "shorttermrental", "vacationrental", "cabinlife", "strinvesting"],
+      "housing_market": ["realestateinvesting", "housingmarket", "newlisting"],
+      "local": ["smokymountains", "easttennessee", "maryvilletn", "gatlinburg", "pigeonforge", "wearsvalley"]
+    },
+    "flex_slots": 3
+  },
+
+  "google_trends": {
+    "geo": "US-TN",
+    "keyword_batches": [
+      ["pool builder", "pool installation cost", "gunite pool", "fiberglass pool", "pool financing"],
+      ["landscaping near me", "hardscape contractor", "retaining wall cost", "outdoor kitchen", "paver patio"],
+      ["drone photography", "real estate drone", "drone roof inspection", "aerial video", "fpv tour"],
+      ["airbnb smoky mountains", "cabin rental gatlinburg", "short term rental tennessee", "str regulations tennessee", "vacation rental management"],
+      ["web designer near me", "small business website", "website cost", "wix vs custom website", "google business profile"],
+      ["home builder tennessee", "cost to build a house", "construction costs 2026", "housing market tennessee", "land for sale blount county"]
+    ]
+  },
+
+  "digest": {
+    "recipients": ["ryan@example.com", "devan@example.com"],
+    "send_day": "monday"
+  }
+}
