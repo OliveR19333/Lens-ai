@@ -45,6 +45,12 @@ read this file first, then vault playbooks in `claude-os-starter/vault/`.
       subscription page → tap the Kling v3.0 row)
 
 ## NEXT BUILD SESSION (in order)
+0. **BUILD FIRST → `/graphify` skill** (Ryan decided 2026-07-11). Obsidian is
+   installed. Build a skill that takes any note / pasted doc / transcript,
+   reads the existing vault, auto-injects `[[wiki-links]]` + frontmatter
+   tags, and files it in the right folder — the open-source Graphify: the
+   vault graph grows itself instead of being hand-linked. Install it via
+   setup.sh alongside brain/plan-today/tnc-video-factory. Then continue:
 1. **First tour sprint** (needs Apify token): run `/re-walkthrough-pro` on a
    real listing; measure exact credit burn (balance before/after); batch
    5–10 pitch tours inside the unlimited window
