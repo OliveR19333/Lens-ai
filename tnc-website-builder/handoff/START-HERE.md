@@ -20,10 +20,12 @@ Standard, Motion, 3D Premium.
 - ✅ Business model locked: membership-first, managed everything
 - ✅ Stack locked: React + Tailwind + React Bits + Anime.js v4; GSAP +
   Lenis for Motion tier; R3F + drei for 3D tier
-- ✅ Infra decisions locked: Cloudflare Registrar (all client domains, TNC
-  account) + Cloudflare Pages/Workers (production hosting, TNC account);
-  Porkbun API v3 as registrar fallback; Higgsfield MCP for asset
-  generation (`generate_image/video/3d`) and rapid build previews
+- ✅ Infra decisions locked (HYBRID, reconciled with the TNC Master Build
+  Plan v2 / PR #2): Cloudflare Registrar (all client domains, TNC account)
+  + Cloudflare Pages/Workers for all static sites; Coolify VPS for the
+  master plan's server suite (Plausible, Listmonk, Ghost, n8n); Porkbun
+  API v3 as registrar fallback; Higgsfield MCP for asset generation
+  (`generate_image/video/3d`) and rapid build previews
 - ✅ 3D standard locked: scroll-first, one hero 3D moment, sacred
   navigation, hard mobile budgets (3D-DESIGN-STANDARD.md)
 - ❌ Nothing built yet: no starter template, no TNC site, no TNC accounts,

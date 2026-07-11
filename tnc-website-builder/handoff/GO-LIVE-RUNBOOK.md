@@ -5,7 +5,9 @@ Each step has a done-check. Don't skip gates. Ryan-action steps are marked
 
 ## Step 0 — Housekeeping (5 min)
 
-- [ ] Merge PR #3 (playbook) into main if still open
+- [ ] Merge PR #3 (this playbook) AND PR #2 (TNC master plan stack) into
+      main if still open — both are independent and mergeable; main should
+      show the whole estate
 - [ ] **[RYAN]** Create TNC Cloudflare account; **[RYAN]** pick + register
       the TNC domain (Cloudflare Registrar); **[RYAN]** confirm GitHub org
 - [ ] Confirm pricing numbers with Ryan → write them into

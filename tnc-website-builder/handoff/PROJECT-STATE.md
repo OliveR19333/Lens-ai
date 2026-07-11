@@ -48,10 +48,19 @@ the playbook doc wins — this is the summary.
 - **Domains:** Cloudflare Registrar, TNC account. API: Cloudflare
   Registrar API (beta, limited TLDs) primary; Porkbun API v3 fallback
   (register there → point nameservers to Cloudflare). Never GoDaddy.
-- **Hosting:** Cloudflare Pages/Workers (TNC account) for production;
-  Higgsfield `deploy_website` (`type: "website"`) for instant build
-  previews. Note: Higgsfield `type: "website"` forbids visitor-facing AI
-  features; irrelevant on our own Cloudflare hosting.
+- **Hosting (HYBRID — reconciled with TNC Master Build Plan v2):**
+  Cloudflare Pages/Workers (TNC account) serves all STATIC sites — client
+  sites and the TNC site (free bandwidth, zero ops, patching lapses can't
+  hurt what clients see). A Coolify VPS (Hetzner/DO, ~$15–25/mo) runs the
+  SERVER suite from the master plan: Plausible, Listmonk, Ghost, n8n,
+  portals — none of which can run on Pages. Higgsfield `deploy_website`
+  for instant build previews. (Higgsfield `type: "website"` forbids
+  visitor-facing AI features; irrelevant on our own hosting.)
+- **Sibling plan:** the [TNC Master Build Plan v2](https://docs.google.com/document/d/1Dnu3Ec8PAiJug7_O51iEE9Xcftr1bcaTLRaP9mZoOBY/edit)
+  (Drive) + PR #2 in this repo govern the full TNC estate — vendor
+  network, Builder Brief newsletter, care plans, revenue architecture.
+  This playbook is the website-builder wing of that vision; care-plan
+  pricing ($99–299/mo) aligns with our membership straw man.
 - **Monitoring:** Cloudflare health checks / UptimeRobot per client site.
 
 ## Repos & branches
