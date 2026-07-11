@@ -37,6 +37,8 @@ The flagship. A high-end 3D experience in the browser.
 - Camera + material animation driven by Anime.js' three.js adapter and/or GSAP
   ScrollTrigger
 - Static-image fallback path so the site stays fast on low-power devices
+- Built to the [TNC 3D Design Standard](3D-DESIGN-STANDARD.md): scroll-first
+  storytelling, one hero 3D moment, always-easy navigation, smooth on phones
 - Everything from the Motion tier included
 - **Best for:** premium brands, real estate, automotive, tech products,
   portfolios that need to win attention

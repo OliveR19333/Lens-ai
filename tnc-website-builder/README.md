@@ -11,6 +11,8 @@ so quality is repeatable and delivery is fast.
 | [PIPELINE.md](PIPELINE.md) | The end-to-end build pipeline, intake → live site |
 | [CLIENT-OPTIONS.md](CLIENT-OPTIONS.md) | The three service tiers clients pick from, with example sites |
 | [STACK.md](STACK.md) | The vetted tool stack: component libraries, animation, 3D, builders |
+| [3D-DESIGN-STANDARD.md](3D-DESIGN-STANDARD.md) | The premium 3D standard: scroll-first taste rules, model hubs, mobile performance budget |
+| [GAPS-AND-ROADMAP.md](GAPS-AND-ROADMAP.md) | Honest gap analysis and the phased roadmap to close it |
 | [INTAKE.md](INTAKE.md) | Client intake questionnaire — fill this out before any build starts |
 
 ## The short version
