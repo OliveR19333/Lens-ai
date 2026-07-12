@@ -6,7 +6,9 @@ import './App.css';
 import Hero from '@/sections/Hero';
 import About from '@/sections/About';
 import Services from '@/sections/Services';
+import MotionShowcase from '@/sections/MotionShowcase';
 import Gallery from '@/sections/Gallery';
+import Process from '@/sections/Process';
 import Testimonials from '@/sections/Testimonials';
 import Contact from '@/sections/Contact';
 
@@ -27,7 +29,9 @@ export default function App() {
         <Hero />
         <About />
         <Services />
+        <MotionShowcase />
         <Gallery />
+        <Process />
         <Testimonials />
         <Contact />
       </main>
