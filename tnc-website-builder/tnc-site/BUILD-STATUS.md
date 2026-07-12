@@ -37,52 +37,90 @@
   - Next: Generate hero backgrounds, section imagery, motion loops
 
 ### ✅ Phase 4: Build to the Board
-- **Status:** Complete
+- **Status:** Complete ✨ (Fully Built with Motion Showcase)
 - **Directory:** `site/`
-- **Details:**
+- **Sections Delivered:**
+  1. **Hero:** "Beautiful Digital Experiences" + gradient background + scroll animation
+  2. **About:** Mission statement, 3 value pillars (Design First, Performance Obsessed, Always Evolving)
+  3. **Services:** 3-tier pricing grid (Standard $1.5k/mo, Motion $2.5k/mo, 3D $4.5k/mo) with highlights
+  4. **MotionShowcase:** Interactive 3D scene (React Three Fiber) showcasing Motion tier features
+  5. **Gallery:** 6 portfolio case studies with tier badges + quantified results (leads, traffic, conversions)
+  6. **Process:** 8-phase pipeline timeline (Intake → Manage) with horizontal/vertical responsive layout
+  7. **Testimonials:** 6 client testimonials with 5-star ratings + results + tier indicators
+  8. **Contact:** Email form (ready for Formspree/SendGrid integration)
+  9. **Navigation:** Sticky navbar + mobile menu, responsive footer with social links
+
+- **Technical Implementation:**
   - ✅ Scaffolded: Vite + React 19 + Tailwind v4 + TypeScript
-  - ✅ Customized sections:
-    - **Hero:** TNC headline ("Beautiful Digital Experiences"), CTA ("Explore Our Work")
-    - **Services:** 3-tier pricing (Standard $1.5k/mo, Motion $2.5k/mo, 3D $4.5k/mo)
-    - **Navbar:** TNC branding, updated nav (Work, Services, Process, About, Contact)
-    - **Footer:** TNC contact (hello@tncgas.com), social links
-    - **Brand Config:** TNC colors applied, motion intensity = standard
-  - ✅ Animation hooks: `useReveal()` for scroll-triggered entrances, `useAnimationTimeline` for Anime.js
-  - ✅ Accessibility: WCAG 2.1 AA, semantic HTML, keyboard nav, reduced-motion support
-  - 📦 Ready to build: `npm install && npm run dev`
+  - ✅ Animation system: Anime.js v4 (`useReveal()` scroll-triggered, Lenis smooth scroll)
+  - ✅ 3D Integration: React Three Fiber + Three.js (Scene3D with rotating geometries, OrbitControls)
+  - ✅ Lazy loading: 3D scene wrapped in Suspense with fallback
+  - ✅ Brand Config: Single-file theme system (colors, fonts, motion intensity) applied globally
+  - ✅ Accessibility: WCAG 2.1 AA, semantic HTML, reduced-motion support, keyboard navigation
+  - ✅ Responsive: Mobile-first (1-col → 2-col → 3-col grids, adaptive layouts)
+  - 🟢 Status: Ready to build (`npm install && npm run dev`)
 
 ---
 
 ## Phases In Progress 🔄
 
 ### Phase 5: Motion Pass
-- **Status:** Pending
-- **Scope:** Dedicated pass for animation tuning
-- **Tasks:**
-  - Verify entrance animations on scroll
-  - Tune easing (ease-out-quad for reveals, custom for hero)
-  - Test stagger timing across sections
-  - Validate "wow moment" (hero parallax + background response)
-  - Motion review on real devices (mobile, tablet, desktop)
+- **Status:** Ready for Testing (Animations Built, Tuning Pending)
+- **Scope:** Verify and fine-tune all motion effects on real devices
+- **Current State:**
+  - ✅ Entrance animations wired (scroll-triggered reveals, fade + slide-up)
+  - ✅ Easing configured (ease-out-quad for reveals, smooth transitions)
+  - ✅ 3D scene auto-rotating (parallax via OrbitControls)
+  - ✅ Reduced-motion respected globally
+- **Remaining Tasks (Phase 5):**
+  - [ ] Real device testing (iPhone, Android, iPad, desktop)
+  - [ ] Verify 60fps smooth scrolling (Lenis integration)
+  - [ ] Fine-tune stagger timing between sections
+  - [ ] Test 3D scene performance on mobile (fallback validation)
+  - [ ] Adjust easing curves if needed post-test
+  - [ ] Verify button hover scales + color transitions
+  - [ ] Mobile touch interaction testing
 
 ### Phase 6: Metadata & Launch Kit
-- **Status:** Pending
-- **Scope:** SEO, analytics, social
+- **Status:** Ready for Implementation
+- **Scope:** SEO, analytics, social, accessibility
 - **Tasks:**
-  - OG title/description (generate social cover image)
-  - Favicon setup
-  - Semantic headings, alt text, sitemap
-  - GA4 analytics snippet
-  - Hotjar optional session replay (if client wants)
+  - [ ] Generate OG social cover image via Higgsfield (16:9, branded)
+  - [ ] Update `src/components/SEO.tsx` with TNC meta tags (title, description, OG tags)
+  - [ ] Set favicon (convert logo to .ico, place in public/)
+  - [ ] Semantic headings audit (h1 → h2 → h3 hierarchy verified)
+  - [ ] Alt text for all images (accessibility requirement)
+  - [ ] Generate sitemap.xml (Vite plugin or manual)
+  - [ ] robots.txt configuration
+  - [ ] GA4 analytics snippet setup
+  - [ ] Optional: Hotjar session replay (if budgeted)
+  - [ ] Verify Lighthouse SEO score ≥95
 
 ### Phase 7: Launch (TNC-managed)
-- **Status:** Pending
-- **Scope:** Domain + hosting + deployment
-- **Tasks:**
-  - **Domain:** Register/transfer tncgas.com to TNC Cloudflare account
-  - **Hosting:** Deploy to Cloudflare Pages under TNC account
-  - **SSL:** Auto-provision via Cloudflare
-  - **SEO:** Submit sitemap to Google Search Console (TNC property)
+- **Status:** Ready to Deploy
+- **Scope:** Domain + hosting + DNS + monitoring
+- **Pre-Launch:**
+  - [ ] **[RYAN]** Register tncgas.com via Cloudflare Registrar (TNC account)
+  - [ ] **[RYAN]** Confirm Cloudflare account setup + Pages project created
+  - [ ] Create PR for review (if needed)
+  - [ ] Final Lighthouse audit (Performance ≥90, SEO ≥95)
+
+- **Deploy Steps:**
+  1. [ ] Create Cloudflare Pages project + link GitHub repo
+  2. [ ] Configure build command: `npm run build`
+  3. [ ] Configure output directory: `dist`
+  4. [ ] Connect domain tncgas.com → Cloudflare Pages
+  5. [ ] Verify SSL auto-provisioned (should be instant)
+  6. [ ] Submit sitemap to Google Search Console (TNC property)
+  7. [ ] Verify indexing (should take 24-48h)
+  8. [ ] Set up UptimeRobot monitoring (optional)
+
+- **Go-Live:**
+  - [ ] Test live URL (tncgas.com)
+  - [ ] Verify all forms working
+  - [ ] Cross-browser testing (Chrome, Firefox, Safari, Edge)
+  - [ ] Mobile device final check
+  - [ ] Announce launch (email, social, blog)
 
 ---
 
