@@ -1,0 +1,39 @@
+{
+  "project": "tnc-site",
+  "generated": "2026-07-12",
+  "status": "Phase 3 - In Progress",
+  "assets": {
+    "concept_images": [
+      {
+        "id": "hero-mood-board",
+        "job_id": "0dc8f5fc-5319-4012-9c2e-3276109ad8f2",
+        "title": "Hero Mood Board",
+        "description": "Modern tech brand hero section with abstract shapes, neon accents",
+        "usage": "Overall tone and color palette validation",
+        "status": "generating"
+      },
+      {
+        "id": "services-grid",
+        "job_id": "d739b28d-e811-4804-9aa2-c30546c8669e",
+        "title": "Services Card Grid",
+        "description": "Three-column service tier showcase with badges and icons",
+        "usage": "Services section component reference",
+        "status": "generating"
+      },
+      {
+        "id": "case-study-hero",
+        "job_id": "1974d897-8711-4cb7-9b89-c6a0611dfbad",
+        "title": "Case Study Hero",
+        "description": "Portfolio case study with overlay and CTA",
+        "usage": "Gallery/portfolio section reference",
+        "status": "generating"
+      }
+    ],
+    "hero_backgrounds": [],
+    "section_imagery": [],
+    "motion_loops": [],
+    "icons": [],
+    "social_assets": []
+  },
+  "notes": "Generating Phase 2 concept images via Higgsfield. Phase 3 asset generation will follow once concepts are approved."
+}

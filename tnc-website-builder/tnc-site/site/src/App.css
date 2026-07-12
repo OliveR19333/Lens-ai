@@ -1,0 +1,63 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Poppins:wght@600;700;800&display=swap');
+
+:root {
+  --color-primary: #1f2937;
+  --color-secondary: #6366f1;
+  --color-accent: #ec4899;
+  --color-text: #111827;
+  --color-bg: #ffffff;
+  --font-family: 'Inter', sans-serif;
+  --heading-family: 'Poppins', sans-serif;
+  --radius: 0.5rem;
+  --motion-intensity: 1;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  font-family: var(--font-family);
+  color: var(--color-text);
+  background-color: var(--color-bg);
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--heading-family);
+  font-weight: 700;
+}
+
+section {
+  scroll-margin-top: 64px;
+}
+
+button, a {
+  transition: all 0.3s ease;
+}
+
+@media print {
+  body {
+    font-size: 12pt;
+  }
+}
+
+@media (prefers-contrast: more) {
+  :root {
+    --color-primary: #000000;
+    --color-text: #000000;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
